@@ -1,3 +1,3 @@
 [submodule ".vim.symlink"]
 	path = .vim.symlink
-	url = https://github.com/mgraff/.vim.git
+	url = https://github.com/mgraff/vim.git
