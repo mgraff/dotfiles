@@ -276,7 +276,7 @@ tmux_conf_copy_to_os_clipboard=false
 #set -g history-limit 10000
 
 # start with mouse mode enabled
-set -g mouse on
+#set -g mouse on
 
 # force Vi mode
 #   really you should export VISUAL or EDITOR environment variable, see manual
@@ -292,3 +292,11 @@ set -g mouse on
 
 # move status line to top
 #set -g status-position top
+unbind Up
+unbind Down
+unbind Left
+unbind Right
+bind Left  select-pane -L  # move left
+bind Down  select-pane -D  # move down
+bind Up    select-pane -U  # move up
+bind Right select-pane -R  # move right
