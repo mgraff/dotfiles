@@ -1,9 +1,6 @@
 [submodule ".vim.symlink"]
 	path = .vim.symlink
-	url = https://github.com/mgraff/vim.git
-[submodule "tmux"]
-	path = tmux
-	url = https://github.com/mgraff/tmux.git
+	url = git@github.com:mgraff/vim.git
 [submodule ".zprezto.symlink"]
 	path = .zprezto.symlink
 	url = git@github.com:mgraff/prezto.git

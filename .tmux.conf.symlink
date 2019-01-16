@@ -1,0 +1,58 @@
+
+# split panes using | and -
+bind | split-window -h
+bind - split-window -v
+unbind '"'
+unbind %
+
+# remap prefix from 'C-b' to 'C-a'
+unbind C-b
+set-option -g prefix C-a
+bind-key C-a send-prefix
+
+# reload config file (change file location to your the tmux.conf you want to use)
+bind r source-file ~/.tmux.conf \; display-message "Config reloaded..."
+
+# switch panes using Alt-arrow without prefix
+bind -n M-Left  select-pane -L
+bind -n M-Right select-pane -R
+bind -n M-Up    select-pane -U
+bind -n M-Down  select-pane -D
+
+# Enable mouse mode
+set -g mouse on
+
+# don't rename windows automatically
+set-option -g allow-rename off
+
+# increase history size
+set -g history-limit 100000
+
+# Allow the arrow key to be used immediately after changing windows
+set-option -g repeat-time 0
+
+# Start numbering at 1
+set -g base-index 1
+
+# window 0, 1, 2, remove 1, renumber to 0, 1
+set-option -g renumber-windows on
+
+# Rather than constraining window size to the maximum size of any client
+# connected to the *session*, constrain window size to the maximum size of any
+# client connected to *that window*. Much more reasonable.
+setw -g aggressive-resize on
+
+# Status Bar
+set-option -g status-interval 1
+set-option -g status-left ''
+set-option -g status-right '%l:%M%p'
+set-option -g status-fg default
+
+# Status Bar solarized-dark (default)
+set-option -g status-bg black
+set-option -g pane-active-border-fg "#55ff55"
+set-option -g pane-border-fg "#74fc65"
+
+# Set window notifications
+set-window-option -g monitor-activity on
+set-option -g visual-activity on
