@@ -13,17 +13,22 @@ bind-key C-a send-prefix
 # reload config file (change file location to your the tmux.conf you want to use)
 bind r source-file ~/.tmux.conf \; display-message "Config reloaded..."
 
-# switch panes using Alt-arrow without prefix
+# PANES
+## switch panes using Alt-arrow without prefix
 bind -n M-Left  select-pane -L
 bind -n M-Right select-pane -R
 bind -n M-Up    select-pane -U
 bind -n M-Down  select-pane -D
-# switch tabs using Shift-Alt-arrow without prefix
+## Zoom pane
+bind + resize-pane -Z
+
+# WINDOWS
+## Create window using Shift-Alt-T and ask to rename it after creation
+bind -n M-T new-window
+set-hook -g after-new-window 'command-prompt -I "#{window_name}" "rename-window '%%'"'
+# switch windows using Shift-Alt-arrow without prefix
 bind -n M-S-Left  previous-window
 bind -n M-S-Right next-window
-
-# Zoom pane
-bind + resize-pane -Z
 
 # Enable mouse mode
 set -g mouse on
