@@ -18,6 +18,12 @@ bind -n M-Left  select-pane -L
 bind -n M-Right select-pane -R
 bind -n M-Up    select-pane -U
 bind -n M-Down  select-pane -D
+# switch tabs using Shift-Alt-arrow without prefix
+bind -n M-S-Left  previous-window
+bind -n M-S-Right next-window
+
+# Zoom pane
+bind + resize-pane -Z
 
 # Enable mouse mode
 set -g mouse on
@@ -42,17 +48,40 @@ set-option -g renumber-windows on
 # client connected to *that window*. Much more reasonable.
 setw -g aggressive-resize on
 
-# Status Bar
-set-option -g status-interval 1
-set-option -g status-left ''
-set-option -g status-right '%l:%M%p'
-set-option -g status-fg default
-
-# Status Bar solarized-dark (default)
-set-option -g status-bg black
-set-option -g pane-active-border-fg "#55ff55"
-set-option -g pane-border-fg "#74fc65"
-
 # Set window notifications
 set-window-option -g monitor-activity on
 set-option -g visual-activity on
+
+# Theme
+## Color definition
+color_main="brightred"
+color_dark="black"
+color_light="white"
+color_secondary="brightmagenta"
+color_session_text="blue"
+color_status_text="colour245"
+
+## Styles
+set -g mode-style "fg=default,bg=$color_main"
+set -g message-style "fg=$color_main,bg=$color_dark"
+set -g status-style "fg=$color_status_text,bg=$color_dark"
+setw -g window-status-activity-style "fg=$color_main"
+setw -g pane-active-border-style "fg=$color_main"
+
+## Separators
+set -g window-status-separator ""
+separator_powerline_left=""
+separator_powerline_right=""
+
+## Status
+set -g status on
+set -g status-interval 5
+set -g status-position bottom
+set -g status-justify left
+set -g status-right-length 100
+set -g status-left "#[fg=$color_session_text] #S #[default]"
+set -g status-right '%l:%M%p'
+setw -g window-status-style "fg=$color_status_text,bg=$color_dark"
+setw -g window-status-format "  #I:#W  "
+setw -g window-status-current-style "fg=$color_light,bold,bg=$color_main"
+setw -g window-status-current-format "#[fg=$color_dark,bg=$color_main]$separator_powerline_right#[default] #I:#W #[fg=$color_main,bg=$color_dark]$separator_powerline_right#[default]"
