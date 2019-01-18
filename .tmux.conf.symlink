@@ -24,11 +24,13 @@ bind + resize-pane -Z
 
 # WINDOWS
 ## Create window using Shift-Alt-T and ask to rename it after creation
-bind -n M-T new-window
+bind-key -n M-T if-shell "[[ $(uname) = 'Linux' ]]" new-window
+bind-key -n ™ if-shell "[[ $(uname) = 'Darwin' ]]" new-window
 set-hook -g after-new-window 'command-prompt -I "#{window_name}" "rename-window '%%'"'
 # switch windows using Shift-Alt-arrow without prefix
 bind -n M-S-Left  previous-window
 bind -n M-S-Right next-window
+bind -n M-S-Up    last-window
 
 # Enable mouse mode
 set -g mouse on
@@ -55,7 +57,7 @@ setw -g aggressive-resize on
 
 # Set window notifications
 set-window-option -g monitor-activity on
-set-option -g visual-activity on
+set-option -g visual-activity off
 
 # Theme
 ## Color definition
