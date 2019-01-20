@@ -1,3 +1,9 @@
+#  _
+# | |_ _ __ ___  _   ___  __
+# | __| '_ ` _ \| | | \ \/ /
+# | |_| | | | | | |_| |>  <
+#  \__|_| |_| |_|\__,_/_/\_\
+#
 
 # split panes using | and -
 bind | split-window -h
@@ -23,9 +29,9 @@ bind -n M-Down  select-pane -D
 bind + resize-pane -Z
 
 # WINDOWS
-## Create window using Shift-Alt-T and ask to rename it after creation
-bind-key -n M-T if-shell "[[ $(uname) = 'Linux' ]]" new-window
-bind-key -n ™ if-shell "[[ $(uname) = 'Darwin' ]]" new-window
+## Create window using Shift-Alt-T (or ™ for OS X) and ask to rename it after creation
+bind-key -n ™   new-window
+bind-key -n M-T new-window
 set-hook -g after-new-window 'command-prompt -I "#{window_name}" "rename-window '%%'"'
 # switch windows using Shift-Alt-arrow without prefix
 bind -n M-S-Left  previous-window
