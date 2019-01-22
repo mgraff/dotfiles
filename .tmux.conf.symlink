@@ -19,6 +19,21 @@ bind-key C-a send-prefix
 # reload config file (change file location to your the tmux.conf you want to use)
 bind r source-file ~/.tmux.conf \; display-message "Config reloaded..."
 
+# Toggle on/off all keybindings
+bind -T root F12  \
+  set prefix None \;\
+  set key-table off \;\
+  if -F '#{pane_in_mode}' 'send-keys -X cancel' \;\
+  refresh-client -S \;\
+
+bind -T off F12 \
+  set -u prefix \;\
+  set -u key-table \;\
+  set -u status-style \;\
+  set -u window-status-current-style \;\
+  set -u window-status-current-format \;\
+  refresh-client -S \;
+
 # PANES
 ## switch panes using Alt-arrow without prefix
 bind -n M-Left  select-pane -L
@@ -75,6 +90,9 @@ color_light="white"
 color_secondary="brightmagenta"
 color_session_text="blue"
 color_status_text="colour245"
+color_window_off_indicator="red"
+color_window_off_status_bg="white"
+color_window_off_status_current_bg="brightwhite"
 
 ## Styles
 set -g mode-style "fg=default,bg=$color_main"
@@ -90,6 +108,9 @@ set -g window-status-separator ""
 separator_powerline_left=""
 separator_powerline_right=""
 
+## Variables
+wg_is_keys_off="#[fg=$color_light,bg=$color_window_off_indicator]#([ $(tmux show-option -qv key-table) = 'off' ] && echo 'OFF')#[default]"
+
 ## Status
 set -g status on
 set -g status-interval 5
@@ -97,6 +118,7 @@ set -g status-position bottom
 set -g status-justify left
 set -g status-right-length 100
 set -g status-left " #S "
-set -g status-right "#H"
+set -g status-right "$wg_is_keys_off #H"
 setw -g window-status-format "  #I›#W  "
 setw -g window-status-current-format "#[fg=$color_dark,nobright,bg=$color_main]$separator_powerline_right#[default] #I›#W #[fg=$color_main,bg=$color_dark]$separator_powerline_right#[default]"
+
