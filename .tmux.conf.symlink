@@ -52,6 +52,7 @@ set-hook -g after-new-window 'command-prompt -I "#{window_name}" "rename-window 
 bind -n M-S-Left  previous-window
 bind -n M-S-Right next-window
 bind -n M-S-Up    last-window
+bind -n M-S-Down  last-window
 
 # Enable mouse mode
 set -g mouse on
@@ -122,3 +123,14 @@ set -g status-right "$wg_is_keys_off #H"
 setw -g window-status-format "  #I›#W  "
 setw -g window-status-current-format "#[fg=$color_dark,nobright,bg=$color_main]$separator_powerline_right#[default] #I›#W #[fg=$color_main,bg=$color_dark]$separator_powerline_right#[default]"
 
+# PLUGINS
+## List of plugins
+set -g @plugin 'tmux-plugins/tpm'
+set -g @plugin 'tmux-plugins/tmux-resurrect'
+set -g @plugin 'tmux-plugins/tmux-continuum'
+
+## Plugins options
+set -g @continuum-restore 'on'
+
+## Initialize TMUX plugin manager (keep this line at the very bottom of tmux.conf)
+run -b '~/.tmux/plugins/tpm/tpm'

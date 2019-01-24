@@ -4,3 +4,12 @@
 [submodule ".zprezto.symlink"]
 	path = .zprezto.symlink
 	url = git@github.com:mgraff/prezto.git
+[submodule ".tmux.symlink/plugins/tpm"]
+	path = .tmux.symlink/plugins/tpm
+	url = https://github.com/tmux-plugins/tpm
+[submodule ".tmux.symlink/plugins/tmux-resurrect"]
+	path = .tmux.symlink/plugins/tmux-resurrect
+	url = https://github.com/tmux-plugins/tmux-resurrect
+[submodule ".tmux.symlink/plugins/tmux-continuum"]
+	path = .tmux.symlink/plugins/tmux-continuum
+	url = https://github.com/tmux-plugins/tmux-continuum
