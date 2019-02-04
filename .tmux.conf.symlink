@@ -48,11 +48,14 @@ bind + resize-pane -Z
 bind-key -n ™   new-window
 bind-key -n M-T new-window
 set-hook -g after-new-window 'command-prompt -I "#{window_name}" "rename-window '%%'"'
-# switch windows using Shift-Alt-arrow without prefix
+## switch windows using Shift-Alt-arrow without prefix
 bind -n M-S-Left  previous-window
 bind -n M-S-Right next-window
 bind -n M-S-Up    last-window
 bind -n M-S-Down  last-window
+## Moving windows
+bind -n M-S-Pageup   swap-window -t :+
+bind -n M-S-Pagedown swap-window -t :-
 
 # Enable mouse mode
 set -g mouse on
