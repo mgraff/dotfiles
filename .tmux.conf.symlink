@@ -86,6 +86,9 @@ set-option -g visual-activity off
 set-window-option -g visual-bell on
 set-window-option -g bell-action other
 
+# Copy mode
+bind -T copy-mode-vi Enter if-shell "[[ $(uname) != 'Darwin' ]]" send-keys -X copy-pipe-and-cancel "xsel -i --clipboard"
+
 # Theme
 ## Color definition
 color_main="brightred"
