@@ -5,6 +5,9 @@
 #  \__|_| |_| |_|\__,_/_/\_\
 #
 
+# Unbinds
+set -sg escape-time 0
+
 # split panes using | and -
 bind | split-window -h
 bind - split-window -v
@@ -87,7 +90,8 @@ set-window-option -g visual-bell on
 set-window-option -g bell-action other
 
 # Copy mode
-bind -T copy-mode-vi Enter if-shell "[[ $(uname) != 'Darwin' ]]" send-keys -X copy-pipe-and-cancel "xsel -i --clipboard"
+#bind -T copy-mode-vi Enter if-shell "[[ $(uname) != 'Darwin' ]]" send-keys -X copy-pipe-and-cancel "xsel -i --clipboard"
+bind -T copy-mode-vi Enter send-keys -X copy-pipe-and-cancel "xsel -i --clipboard"
 
 # Theme
 ## Color definition
@@ -127,7 +131,7 @@ set -g status-right-length 100
 set -g status-left " #S "
 set -g status-right "$wg_is_keys_off #H"
 setw -g window-status-format "  #I›#W  "
-setw -g window-status-current-format "#[fg=$color_dark,nobright,bg=$color_main]$separator_powerline_right#[default] #I›#W #[fg=$color_main,bg=$color_dark]$separator_powerline_right#[default]"
+setw -g window-status-current-format "#[fg=$color_dark,nobright,bg=$color_main]$separator_powerline_right #I›#W #[fg=$color_main,bg=$color_dark]$separator_powerline_right#[default]"
 
 # PLUGINS
 ## List of plugins
