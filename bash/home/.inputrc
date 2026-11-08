@@ -1,0 +1,33 @@
+# Configuration de readline (édition de la ligne de commande)
+
+# Garder les réglages de Fedora : Début/Fin, Ctrl-←/→, PgUp/PgDn…
+$include /etc/inputrc
+
+# Pas de bip
+set bell-style none
+
+# Complétion
+set completion-ignore-case on     # doc<Tab> → Documents/
+set completion-map-case on        # - et _ équivalents
+set show-all-if-ambiguous on      # liste dès le premier Tab
+set colored-stats on              # couleurs de ls dans la liste
+set colored-completion-prefix on  # partie commune en couleur
+set match-hidden-files off        # fichiers cachés seulement après un « . »
+set skip-completed-text on        # pas de doublon en complétant au milieu d'un mot
+set page-completions off          # pas de --More-- dans les longues listes
+set completion-query-items 200    # confirmation seulement au-delà de 200 possibilités
+
+# Édition
+set blink-matching-paren on       # en tapant ) ] }, le curseur saute un instant sur l'ouvrante
+
+# Si le terminal déclare ^H comme caractère d'effacement (stty erase), sans
+# ce réglage, readline le réassocie à l'effacement d'un caractère et ignore
+# la ligne suivante. Ctrl-W et Ctrl-U gardent leur rôle (raccourcis readline).
+set bind-tty-special-chars off
+# Ctrl-Backspace (même code que Ctrl-H) : efface jusqu'à l'espace ou au « / »
+# précédent. Ctrl-Suppr fait l'inverse (fonction bash dans ~/.bashrc.d/50-editor.sh).
+"\C-h": unix-filename-rubout
+
+$if Bash
+  Space: magic-space              # sudo !! + Espace → sudo <commande précédente>
+$endif
