@@ -21,8 +21,9 @@ install.sh              installe et met à jour (devient la commande « dotfiles
 bash/home/…             ~/.bashrc, ~/.inputrc, ~/.bashrc.d/…
 bash/hook.sh            complétions kubectl/npm/pip/toolbox, outils manquants
 nvim/home/…             ~/.config/nvim/init.lua (léger, sans plugin)
-nvim/hook.sh            vérifie que nvim est installé
+nvim/requires           installé seulement si nvim est présent
 tmux/home/…             ~/.tmux.conf
+tmux/requires           installé seulement si tmux est présent
 tmux/hook.sh            recharge la configuration du serveur tmux en cours
 ```
 
@@ -30,6 +31,10 @@ tmux/hook.sh            recharge la configuration du serveur tmux en cours
   `~` avec la même arborescence.
 - `<paquet>/hook.sh` (facultatif) est lancé après chaque installation ou mise à
   jour.
+- `<paquet>/requires` (facultatif) liste les commandes dont le paquet a besoin,
+  une par ligne. S'il en manque une, le paquet est ignoré : ses fichiers ne sont
+  pas installés (ou sont retirés s'ils l'étaient) et son hook n'est pas lancé.
+  Dès que l'outil est installé, la mise à jour suivante installe le paquet.
 - Pour ajouter un paquet, par exemple git : créer `git/home/.gitconfig`.
 
 ## Fonctionnement
@@ -70,8 +75,9 @@ suivante.
   d'écriture. Pour ouvrir un fichier système, préférer `sudoedit fichier` à
   `sudo nvim fichier` : la configuration est la même et nvim ne tourne pas en
   root.
-- **Debian** : installer `git fzf neovim less bash-completion` (neovim ≥ 0.11) ;
-  les hooks signalent ce qui manque.
+- **Debian** : installer `git fzf less bash-completion` ; le hook bash signale
+  ce qui manque. nvim et tmux sont facultatifs : sans nvim, l'éditeur est vim,
+  sinon vi.
 - **Nerd Font** : à installer sur le poste depuis lequel on se connecte, pas sur
   les serveurs.
 - **Dépôt public** : ne jamais y mettre de secret.

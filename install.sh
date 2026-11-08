@@ -11,6 +11,8 @@
 # Organisation du dépôt : un dossier par paquet (bash, nvim, tmux…)
 #   <paquet>/home/…   fichiers à placer dans ~, même arborescence
 #   <paquet>/hook.sh  facultatif, lancé après chaque installation ou mise à jour
+#   <paquet>/requires facultatif, une commande par ligne : le paquet n'est
+#                     installé que si toutes ces commandes sont présentes
 #
 # Le dépôt est cloné dans ~/.local/share/dotfiles/repo.git. Chaque commit
 # installé est extrait dans releases/<date>-<commit>, et « current » pointe vers
@@ -52,14 +54,49 @@ check() {
     (( ! errors )) || die "version rejected, nothing was changed"
 }
 
-# Crée les liens de ~ vers la version active et retire ceux devenus inutiles
+# Paquets de la version active (dossiers avec home/ ou hook.sh)
+packages() {
+    local pkg
+    for pkg in "$DATA"/current/*/; do
+        pkg=${pkg%/}
+        if [[ -d $pkg/home || -f $pkg/hook.sh ]]; then
+            printf '%s\n' "${pkg##*/}"
+        fi
+    done
+}
+
+# Commandes requises par le paquet $1 (fichier requires) qui ne sont pas
+# installées ; rien si le paquet peut être installé
+missing() {
+    local file=$DATA/current/$1/requires cmd
+    [[ -f $file ]] || return 0
+    while read -r cmd; do
+        [[ -z $cmd || $cmd == '#'* ]] && continue
+        if ! command -v "$cmd" >/dev/null; then
+            printf '%s ' "$cmd"
+        fi
+    done <"$file"
+}
+
+# Paquets dont toutes les commandes requises sont installées
+enabled() {
+    local name
+    packages | while read -r name; do
+        if [[ -z $(missing "$name") ]]; then
+            printf '%s\n' "$name"
+        fi
+    done
+}
+
+# Crée les liens de ~ vers la version active et retire ceux devenus inutiles,
+# y compris ceux des paquets dont un outil requis a été désinstallé
 link() {
-    local stamp=$1 pkg rel src dst old
+    local stamp=$1 name pkg rel src dst old
     local new_list=$DATA/links.new
     : >"$new_list"
 
-    for pkg in "$DATA"/current/*/; do
-        pkg=${pkg%/}
+    while read -r name; do
+        pkg=$DATA/current/$name
         [[ -d $pkg/home ]] || continue
         while IFS= read -r -d '' src; do
             rel=${src#"$pkg/home/"}
@@ -79,7 +116,7 @@ link() {
             fi
             ln -s "$src" "$dst"
         done < <(find "$pkg/home" \( -type f -o -type l \) -print0)
-    done
+    done < <(enabled)
 
     # Liens de la version précédente qui n'existent plus dans celle-ci
     if [[ -f $DATA/links ]]; then
@@ -95,14 +132,19 @@ link() {
 
 # Active la version $1 (nom d'un dossier de releases) puis lance les hooks
 activate() {
-    local release=$1 hook
+    local release=$1 name miss
     ln -sfn "releases/$release" "$DATA/current.new"
     mv -T "$DATA/current.new" "$DATA/current"
     link "$release"
-    for hook in "$DATA"/current/*/hook.sh; do
-        [[ -f $hook ]] || continue
-        (cd "${hook%/*}" && bash ./hook.sh) || warn "hook failed: ${hook#"$DATA/current/"}"
-    done
+    while read -r name; do
+        miss=$(missing "$name")
+        if [[ -n $miss ]]; then
+            say "skipped $name: ${miss% } not installed"
+        elif [[ -f $DATA/current/$name/hook.sh ]]; then
+            (cd "$DATA/current/$name" && bash ./hook.sh </dev/null) || warn "hook failed: $name"
+        fi
+    done < <(packages)
+    enabled >"$DATA/packages"
 }
 
 # Commande « dotfiles » et mise à jour quotidienne automatique
@@ -161,7 +203,13 @@ cmd_update() {
     local commit tmp name
     commit=$(fetch)
     if [[ $(readlink "$DATA/current" 2>/dev/null) == *-"${commit:0:7}" ]]; then
-        say "already up to date (${commit:0:7})"
+        if [[ $(enabled) == "$(cat "$DATA/packages" 2>/dev/null)" ]]; then
+            say "already up to date (${commit:0:7})"
+        else
+            # Un outil requis a été installé ou désinstallé depuis
+            activate "$(basename "$(readlink "$DATA/current")")"
+            say "packages updated (${commit:0:7})"
+        fi
         return
     fi
     tmp=$(mktemp -d "$DATA/tmp.XXXXXX")
@@ -211,6 +259,16 @@ cmd_status() {
         say "version:    none"
     fi
     say "available:  $(ls -1 "$DATA/releases" 2>/dev/null | sort -r | tr '\n' ' ')"
+    if [[ -n $current ]]; then
+        local name skipped=
+        for name in $(packages); do
+            if [[ -n $(missing "$name") ]]; then
+                skipped+="$name ($(missing "$name" | sed 's/ $//') not installed) "
+            fi
+        done
+        say "packages:   $(enabled | tr '\n' ' ')"
+        [[ -n $skipped ]] && say "skipped:    $skipped"
+    fi
     say "managed files: $(wc -l <"$DATA/links" 2>/dev/null || echo 0)"
     if command -v systemctl >/dev/null && systemctl --user is-enabled dotfiles-update.timer >/dev/null 2>&1; then
         say "next update: $(systemctl --user show dotfiles-update.timer -p NextElapseUSecRealtime --value)"

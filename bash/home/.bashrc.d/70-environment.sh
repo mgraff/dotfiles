@@ -1,13 +1,14 @@
 # Environnement (module environment et zprofile de Prezto)
 
 # Éditeur : git commit, crontab -e, sudoedit, systemctl edit, Ctrl-X Ctrl-E…
-# (vim en secours si nvim manque ; « dotfiles » le signale à l'installation)
-if command -v nvim >/dev/null; then
-    export EDITOR=nvim
-else
-    export EDITOR=vim
-fi
-export VISUAL=$EDITOR
+# nvim s'il est installé, sinon vim, sinon vi (vim-tiny sur une Debian minimale)
+for __editor in nvim vim vi; do
+    if command -v "$__editor" >/dev/null; then
+        export EDITOR=$__editor VISUAL=$__editor
+        break
+    fi
+done
+unset __editor
 
 # Pager
 #   -F  pas de pager si le texte tient sur un écran (git le met de lui-même
