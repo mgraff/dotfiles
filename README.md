@@ -20,8 +20,8 @@ Les fichiers déjà présents à la place des nouveaux sont déplacés dans
 install.sh              installe et met à jour (devient la commande « dotfiles »)
 bash/home/…             ~/.bashrc, ~/.inputrc, ~/.bashrc.d/…
 bash/hook.sh            complétions kubectl/npm/pip/toolbox, outils manquants
-nvim/home/…             ~/.config/nvim/… (kickstart.nvim)
-nvim/hook.sh            outils manquants
+nvim/home/…             ~/.config/nvim/init.lua (léger, sans plugin)
+nvim/hook.sh            vérifie que nvim est installé
 tmux/home/…             ~/.tmux.conf
 tmux/hook.sh            recharge la configuration du serveur tmux en cours
 ```
@@ -66,11 +66,12 @@ suivante.
 
 ## À savoir
 
-- **nvim** : `lazy-lock.json` fixe les versions des plugins. Après `:Lazy update`,
-  recopier `~/.config/nvim/lazy-lock.json` dans le dépôt et le commiter, sinon
-  la mise à jour suivante remet l'ancien fichier.
-- **Debian** : installer `git fzf neovim less bash-completion` (et
-  `ripgrep make gcc unzip` pour nvim) ; les hooks signalent ce qui manque.
+- **nvim** : `:W` enregistre avec sudo un fichier ouvert sans les droits
+  d'écriture. Pour ouvrir un fichier système, préférer `sudoedit fichier` à
+  `sudo nvim fichier` : la configuration est la même et nvim ne tourne pas en
+  root.
+- **Debian** : installer `git fzf neovim less bash-completion` (neovim ≥ 0.11) ;
+  les hooks signalent ce qui manque.
 - **Nerd Font** : à installer sur le poste depuis lequel on se connecte, pas sur
   les serveurs.
 - **Dépôt public** : ne jamais y mettre de secret.
