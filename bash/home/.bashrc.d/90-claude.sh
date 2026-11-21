@@ -9,7 +9,15 @@
 # ou CLAUDE_SHELL_MODEL (par exemple « haiku », plus rapide).
 
 [[ $- == *i* ]] || return 0
-command -v claude >/dev/null || return 0
+
+# Sans Claude Code (serveur distant…), Alt-A le dit au lieu de ne rien faire
+if ! command -v claude >/dev/null; then
+    __claude_command() {
+        printf '\n%s\n' 'claude: Claude Code is not installed on this machine' >&2
+    }
+    bind -x '"\ea": __claude_command'
+    return 0
+fi
 
 __claude_command() {
     local request=$READLINE_LINE system reply

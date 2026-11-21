@@ -123,7 +123,8 @@ suivante.
   avec leur diff à droite.
 - **Claude** : taper une demande en langage naturel sur la ligne de commande,
   puis `Alt-A` : Claude Code la remplace par une commande, à relire avant de la
-  lancer (`Ctrl-_` revient à la demande). Seulement si `claude` est installé ;
+  lancer (`Ctrl-_` revient à la demande). Sur une machine sans `claude`, `Alt-A`
+  le signale ;
   `CLAUDE_SHELL_MODEL=haiku` pour un modèle plus rapide.
 - **git** : l'identité (`user.name`, `user.email`) n'est pas dans le dépôt,
   elle est propre à chaque machine. La définir avec `git config --global`, qui
