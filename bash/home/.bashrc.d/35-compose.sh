@@ -1,9 +1,9 @@
 # Segment « compose » du prompt (appelé par 30-prompt.sh) quand le dossier
 # courant, ou un parent, contient un fichier compose :
 #
-#   ~/monapp on  main  via 󰡨 monapp 3/3
-#   ~/monapp on  main  via 󰡨 monapp 2/3 (db ✘)
-#   ~/monapp on  main  via 󰡨 monapp 3/3 ✚ api ↻ worker ⟳
+#   ~/monapp                         main · 󰡨 monapp 3/3 · 14:32
+#   ~/monapp                         main · 󰡨 monapp 2/3 (db ✘) · 14:32
+#   ~/monapp                         main · 󰡨 monapp 3/3 ✚ api ↻ worker ⟳ · 14:32
 #
 # - nom du projet, services en marche / services déclarés
 #   (vert : tous, jaune : une partie, gris : aucun)
@@ -161,7 +161,7 @@ __compose_refresh() {
     __compose_name=${__compose_name,,}
     __compose_name=${__compose_name//[^-_a-z0-9]/}
 
-    __compose_seg=" via ${__prompt_c[blue]}󰡨 ${__compose_name}${__prompt_c[reset]}"
+    __compose_seg="${__prompt_c[blue]}󰡨 ${__compose_name}${__prompt_c[reset]}"
 
     command -v podman >/dev/null || command -v docker >/dev/null || return 0
     mapfile -t ps < <(__compose_ps)
@@ -220,7 +220,7 @@ __compose_refresh() {
     fi
 }
 
-# Ajoute le segment à __prompt_line. $1 : racine du dépôt git (vide hors dépôt)
+# Ajoute le segment à __prompt_right. $1 : racine du dépôt git (vide hors dépôt)
 __prompt_compose() {
     __compose_find "$1" || return 0
 
@@ -238,5 +238,5 @@ __prompt_compose() {
         __compose_time=$EPOCHSECONDS
         __compose_refresh
     fi
-    __prompt_line+=$__compose_seg
+    __prompt_right+=("$__compose_seg")
 }

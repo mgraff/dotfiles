@@ -1,15 +1,17 @@
 # Prompt sur deux lignes dans le style de starship :
 #
-#   ⬢ [toolbox] ~/Documents/projet on  main (REBASING 1/3) [!+?⇡]           1   12s  14:32
+#   ⬢ [toolbox] ~/Documents/projet      main (REBASING 1/3) !+?⇡ · 󰡨 app 2/2 ·  1 ·  12s · 14:32
 #   ❯ _
 #
+# À gauche, où l'on est :
 # - conteneur toolbox/distrobox, utilisateur@machine seulement en root ou SSH
 # - dossier : 3 derniers niveaux, relatif à la racine du dépôt git
+# À droite, le contexte, séparé par des « · » :
 # - git : branche, opération en cours, état
 #     = conflit  $ stash  ✘ supprimé  » renommé  ! modifié  + indexé  ? non suivi
 #     ⇡ en avance  ⇣ en retard  ⇕ divergé
 # - projet compose : voir 35-compose.sh
-# - à droite : code de retour si ≠ 0, durée de la commande si elle dépasse 2 s,
+# - code de retour si ≠ 0, durée de la commande si elle dépasse 2 s,
 #   heure (discrète)
 # - « ❯ » vert, ou rouge si la dernière commande a échoué
 
@@ -63,9 +65,9 @@ __prompt_dir() {
     [[ -w $PWD ]] || __prompt_line+="${__prompt_c[red]} ${__prompt_c[reset]}"
 }
 
-# $1 : dossier .git
+# Ajoute le segment git à __prompt_right. $1 : dossier .git
 __prompt_git() {
-    local gitdir=$1 line branch oid state flags=
+    local gitdir=$1 line branch oid state flags= seg
     local ahead=0 behind=0 conflicted= stashed= deleted= renamed= modified= staged= untracked=
 
     while IFS= read -r line; do
@@ -87,9 +89,9 @@ __prompt_git() {
     done < <(GIT_OPTIONAL_LOCKS=0 git status --porcelain=v2 --branch --show-stash 2>/dev/null)
 
     if [[ $branch == '(detached)' ]]; then
-        __prompt_line+=" ${__prompt_c[green]}(${oid:0:7})${__prompt_c[reset]}"
+        seg="${__prompt_c[green]}(${oid:0:7})${__prompt_c[reset]}"
     else
-        __prompt_line+=" on ${__prompt_c[purple]} ${branch}${__prompt_c[reset]}"
+        seg="${__prompt_c[purple]} ${branch}${__prompt_c[reset]}"
     fi
 
     if [[ -d $gitdir/rebase-merge ]]; then
@@ -105,7 +107,7 @@ __prompt_git() {
     elif [[ -f $gitdir/BISECT_LOG ]]; then
         state=BISECTING
     fi
-    [[ -n $state ]] && __prompt_line+=" ${__prompt_c[yellow]}(${state})${__prompt_c[reset]}"
+    [[ -n $state ]] && seg+=" ${__prompt_c[yellow]}(${state})${__prompt_c[reset]}"
 
     flags=$conflicted$stashed$deleted$renamed$modified$staged$untracked
     if (( ahead && behind )); then
@@ -115,7 +117,8 @@ __prompt_git() {
     elif (( behind )); then
         flags+='⇣'
     fi
-    [[ -n $flags ]] && __prompt_line+=" ${__prompt_c[red]}[${flags}]${__prompt_c[reset]}"
+    [[ -n $flags ]] && seg+=" ${__prompt_c[red]}${flags}${__prompt_c[reset]}"
+    __prompt_right+=("$seg")
 }
 
 # Largeur affichée de $1 (sans les séquences de couleur \001…\002) dans __prompt_w
@@ -130,7 +133,7 @@ __prompt_width() {
 # Dernier élément de PROMPT_COMMAND : construit les deux lignes du prompt
 __prompt_render() {
     local git=() s=$__prompt_elapsed duration=
-    __prompt_line=
+    __prompt_line= __prompt_right=()
 
     [[ -n $__prompt_container ]] &&
         __prompt_line+="${__prompt_c[dimred]}⬢ [${__prompt_container}]${__prompt_c[reset]} "
@@ -143,7 +146,7 @@ __prompt_render() {
         fi
         [[ -n $SSH_CONNECTION ]] &&
             __prompt_line+="@${__prompt_c[dimgreen]}${HOSTNAME%%.*}${__prompt_c[reset]}"
-        __prompt_line+=" in "
+        __prompt_line+=" "
     fi
 
     command -v git >/dev/null &&
@@ -152,10 +155,9 @@ __prompt_render() {
     (( ${#git[@]} == 2 )) && __prompt_git "${git[1]}"
     declare -F __prompt_compose >/dev/null && __prompt_compose "${git[0]}"
 
-    # Partie droite : code de retour et durée de la commande précédente
-    local right=
+    # Code de retour et durée de la commande précédente
     if (( __prompt_exit )); then
-        right+="${__prompt_c[red]} ${__prompt_exit}${__prompt_c[reset]}"
+        __prompt_right+=("${__prompt_c[red]} ${__prompt_exit}${__prompt_c[reset]}")
         __prompt_char="${__prompt_c[red]}❯${__prompt_c[reset]} "
     else
         __prompt_char="${__prompt_c[green]}❯${__prompt_c[reset]} "
@@ -164,12 +166,17 @@ __prompt_render() {
         (( s >= 3600 )) && duration+="$(( s / 3600 ))h"
         (( s >= 60 )) && duration+="$(( s % 3600 / 60 ))m"
         duration+="$(( s % 60 ))s"
-        right+="${right:+  }${__prompt_c[yellow]} ${duration}${__prompt_c[reset]}"
+        __prompt_right+=("${__prompt_c[yellow]} ${duration}${__prompt_c[reset]}")
     fi
 
     local now
     printf -v now '%(%H:%M)T' -1
-    right+="${right:+  }${__prompt_c[dim]}${now}${__prompt_c[reset]}"
+    __prompt_right+=("${__prompt_c[dim]}${now}${__prompt_c[reset]}")
+
+    local right=${__prompt_right[0]} part
+    for part in "${__prompt_right[@]:1}"; do
+        right+=" ${__prompt_c[dim]}·${__prompt_c[reset]} $part"
+    done
 
     # Aligner la partie droite sur le bord du terminal (simple espace si trop long)
     if [[ -n $right ]]; then
