@@ -6,9 +6,11 @@ command -v fzf >/dev/null || return 0
 
 # Apparence, pour Ctrl-R, **<Tab> et les « … | fzf » tapés à la main : sous la
 # ligne de commande (40 % de la hauteur) au lieu de plein écran, saisie en
-# haut, couleurs de la barre tmux. Options compatibles avec le fzf de Debian 12.
+# haut, couleurs de la barre tmux ; Shift-↑/↓ font défiler l'aperçu par
+# demi-page (au lieu d'une ligne). Options compatibles avec le fzf de Debian 12.
 export FZF_DEFAULT_OPTS="--height=40% --layout=reverse --border=rounded --info=inline \
---color=hl:red,hl+:bright-red,pointer:bright-red,marker:bright-red,prompt:bright-red,spinner:bright-red,info:245,border:245"
+--color=hl:red,hl+:bright-red,pointer:bright-red,marker:bright-red,prompt:bright-red,spinner:bright-red,info:245,border:245 \
+--bind=shift-down:preview-half-page-down,shift-up:preview-half-page-up"
 
 # Fichiers proposés par **<Tab> : ceux que liste rg, qui respecte les
 # .gitignore (.venv/, build/…) ; fichiers cachés compris, sauf .git/ et
