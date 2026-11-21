@@ -121,6 +121,10 @@ suivante.
   fichiers), `Ctrl-R` cherche dans l'historique. Après `git add`, `git diff` et
   `git restore`, `**<Tab>` ne propose que les fichiers modifiés ou nouveaux,
   avec leur diff à droite.
+- **Claude** : taper une demande en langage naturel sur la ligne de commande,
+  puis `Alt-A` : Claude Code la remplace par une commande, à relire avant de la
+  lancer (`Ctrl-_` revient à la demande). Seulement si `claude` est installé ;
+  `CLAUDE_SHELL_MODEL=haiku` pour un modèle plus rapide.
 - **git** : l'identité (`user.name`, `user.email`) n'est pas dans le dépôt,
   elle est propre à chaque machine. La définir avec `git config --global`, qui
   écrit dans `~/.gitconfig`, un fichier local qui l'emporte sur
