@@ -32,6 +32,9 @@ git/home/…              ~/.config/git/config (réglages communs)
                         et ~/.config/git/ignore (fichiers ignorés partout)
 git/requires            installé seulement si git est présent
 git/hook.sh             crée ~/.gitconfig, signale une identité manquante
+ssh/home/…              ~/.ssh/config (réglages communs)
+ssh/requires            installé seulement si ssh est présent
+ssh/hook.sh             crée ~/.ssh/config.local et ~/.ssh/sockets, droits de ~/.ssh
 ```
 
 - Un dossier par paquet : tout ce qui est dans `<paquet>/home/` est placé dans
@@ -106,4 +109,10 @@ suivante.
   écrit dans `~/.gitconfig`, un fichier local qui l'emporte sur
   `~/.config/git/config`. Tant qu'elle manque, git refuse de commiter. Les
   dépôts GitHub clonés en https sont poussés en ssh.
+- **ssh** : les hôtes, utilisateurs et clés propres à la machine vont dans
+  `~/.ssh/config.local`, hors du dépôt, lu avant `~/.ssh/config` (ssh garde la
+  première valeur trouvée). Les connexions à un même hôte sont partagées et
+  restent ouvertes 10 minutes : `ssh -O exit hôte` pour fermer, `ssh -S none
+  hôte` pour une connexion séparée. Un hôte inconnu est accepté sans question ;
+  une clé d'hôte qui a changé est toujours refusée.
 - **Dépôt public** : ne jamais y mettre de secret.
