@@ -5,15 +5,4 @@
 
 shopt -s no_empty_cmd_completion  # Tab sur une ligne vide ne liste pas toutes les commandes
 
-# Complétion floue de fzf (vim **<Tab>) : chargée d'office sur Fedora, pas sur Debian
-if command -v fzf >/dev/null && ! declare -F _fzf_path_completion >/dev/null; then
-    for __fzf in /usr/share/fzf/shell/completion.bash \
-                 /usr/share/doc/fzf/examples/completion.bash \
-                 /usr/share/bash-completion/completions/fzf; do
-        if [[ -r $__fzf ]]; then
-            . "$__fzf"
-            break
-        fi
-    done
-    unset __fzf
-fi
+# La complétion floue de fzf (**<Tab>) est chargée par 25-fzf.sh

@@ -104,6 +104,10 @@ suivante.
   sinon vi.
 - **Nerd Font** : à installer sur le poste depuis lequel on se connecte, pas sur
   les serveurs.
+- **fzf** : `**<Tab>` ouvre une liste filtrable (`Tab` pour cocher plusieurs
+  fichiers), `Ctrl-R` cherche dans l'historique. Après `git add`, `git diff` et
+  `git restore`, `**<Tab>` ne propose que les fichiers modifiés ou nouveaux,
+  avec leur diff à droite.
 - **git** : l'identité (`user.name`, `user.email`) n'est pas dans le dépôt,
   elle est propre à chaque machine. La définir avec `git config --global`, qui
   écrit dans `~/.gitconfig`, un fichier local qui l'emporte sur
