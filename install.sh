@@ -13,6 +13,9 @@
 # Organisation du dépôt : un dossier par paquet (bash, nvim, tmux…)
 #   <paquet>/home/…   fichiers à placer dans ~, même arborescence
 #   <paquet>/hook.sh  facultatif, lancé après chaque installation ou mise à jour
+#   <paquet>/check.sh facultatif, vérifications sans effet (outils manquants…),
+#                     lancé à chaque update, même déjà à jour, et par status ;
+#                     ce qu'il affiche est montré en jaune
 #   <paquet>/requires facultatif, une commande par ligne : le paquet n'est
 #                     installé que si toutes ces commandes sont présentes
 #
@@ -34,6 +37,15 @@ REPO=$DATA/repo.git
 KEEP=5  # versions conservées pour rollback
 
 say()  { printf '%s\n' "$*"; }
+# Avertissement en jaune gras dans un terminal (pas de codes couleur dans le
+# journal du timer), sauf si NO_COLOR est défini
+attention() {
+    if [[ -t 2 && -z ${NO_COLOR:-} ]]; then
+        printf '\e[1;33m%s\e[0m\n' "$*" >&2
+    else
+        printf '%s\n' "$*" >&2
+    fi
+}
 warn() { printf 'dotfiles: %s\n' "$*" >&2; }
 die()  { warn "$*"; exit 1; }
 
@@ -175,6 +187,17 @@ activate() {
     enabled >"$DATA/packages"
 }
 
+# Vérifications des paquets actifs (<paquet>/check.sh), affichées en jaune
+checks() {
+    local name line
+    while read -r name; do
+        [[ -f $DATA/current/$name/check.sh ]] || continue
+        while IFS= read -r line; do
+            attention "$line"
+        done < <(cd "$DATA/current/$name" && bash ./check.sh </dev/null 2>&1)
+    done < <(enabled)
+}
+
 # Commande « dotfiles » et mise à jour quotidienne automatique
 setup() {
     mkdir -p "$HOME/.local/bin"
@@ -238,6 +261,7 @@ cmd_update() {
             activate "$(basename "$(readlink "$DATA/current")")"
             say "packages updated (${commit:0:7})"
         fi
+        checks
         return
     fi
     tmp=$(mktemp -d "$DATA/tmp.XXXXXX")
@@ -252,6 +276,7 @@ cmd_update() {
     activate "$name"
     prune
     say "installed $(git --git-dir="$REPO" log -1 --format='%h "%s"' "$commit") from $(branch)"
+    checks
 }
 
 cmd_install() {
@@ -294,6 +319,7 @@ cmd_rollback() {
     flock -n 9 || die "an update is already running"
     activate "$previous"
     say "rolled back to $previous (the next update will reinstall the latest version)"
+    checks
 }
 
 cmd_status() {
@@ -321,6 +347,7 @@ cmd_status() {
     if command -v systemctl >/dev/null && systemctl --user is-enabled dotfiles-update.timer >/dev/null 2>&1; then
         say "next update: $(systemctl --user show dotfiles-update.timer -p NextElapseUSecRealtime --value)"
     fi
+    [[ -n $current ]] && checks
 }
 
 usage() {

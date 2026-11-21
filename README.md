@@ -20,7 +20,8 @@ Les fichiers déjà présents à la place des nouveaux sont déplacés dans
 install.sh              installe et met à jour (devient la commande « dotfiles »)
 bash/home/…             ~/.bashrc, ~/.inputrc, ~/.bashrc.d/…
                         et la complétion de la commande dotfiles
-bash/hook.sh            complétions kubectl/npm/pip/toolbox, outils manquants
+bash/hook.sh            complétions kubectl/npm/pip/toolbox
+bash/check.sh           signale les outils manquants
 nvim/home/…             ~/.config/nvim/init.lua (léger, sans plugin)
 nvim/requires           installé seulement si nvim est présent
 tmux/home/…             ~/.tmux.conf
@@ -31,7 +32,8 @@ tmux/hook.sh            recharge la configuration du serveur tmux en cours
 git/home/…              ~/.config/git/config (réglages communs)
                         et ~/.config/git/ignore (fichiers ignorés partout)
 git/requires            installé seulement si git est présent
-git/hook.sh             crée ~/.gitconfig, signale une identité manquante
+git/hook.sh             crée ~/.gitconfig
+git/check.sh            signale une identité manquante
 ssh/home/…              ~/.ssh/config (réglages communs)
 ssh/requires            installé seulement si ssh est présent
 ssh/hook.sh             crée ~/.ssh/config.local et ~/.ssh/sockets, droits de ~/.ssh
@@ -41,6 +43,10 @@ ssh/hook.sh             crée ~/.ssh/config.local et ~/.ssh/sockets, droits de ~
   `~` avec la même arborescence.
 - `<paquet>/hook.sh` (facultatif) est lancé après chaque installation ou mise à
   jour.
+- `<paquet>/check.sh` (facultatif) vérifie sans rien modifier (outils
+  manquants, identité git…). Il est lancé à chaque `dotfiles update`, même
+  quand tout est déjà à jour, et par `dotfiles status` ; ce qu'il affiche
+  apparaît en jaune.
 - `<paquet>/requires` (facultatif) liste les commandes dont le paquet a besoin,
   une par ligne. S'il en manque une, le paquet est ignoré : ses fichiers ne sont
   pas installés (ou sont retirés s'ils l'étaient) et son hook n'est pas lancé.
@@ -99,8 +105,8 @@ suivante.
   d'écriture. Pour ouvrir un fichier système, préférer `sudoedit fichier` à
   `sudo nvim fichier` : la configuration est la même et nvim ne tourne pas en
   root.
-- **Debian** : installer `git fzf less ripgrep bat bash-completion` ; le hook bash signale
-  ce qui manque. nvim et tmux sont facultatifs : sans nvim, l'éditeur est vim,
+- **Debian** : installer `git fzf less ripgrep bat bash-completion` ; `dotfiles update`
+  signale ce qui manque. nvim et tmux sont facultatifs : sans nvim, l'éditeur est vim,
   sinon vi.
 - **Nerd Font** : à installer sur le poste depuis lequel on se connecte, pas sur
   les serveurs.
