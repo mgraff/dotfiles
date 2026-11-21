@@ -30,9 +30,10 @@ qui concerne la façon d'y travailler.
   qui est propre à une machine va dans un fichier local hors du dépôt
   (`~/.gitconfig`, `~/.ssh/config.local`), créé par le hook du paquet.
 - Mêmes fichiers sur toutes les machines (Fedora et Debian), sans différence
-  par machine. Rester compatible avec Debian 12 : bash 5.2, fzf 0.38, bat
-  installé sous le nom `batcat`, git 2.39, OpenSSH 9.2. Vérifier qu'une option
-  existe dans ces versions avant de l'utiliser.
+  par machine. Les versions les plus anciennes sont celles de Debian 13 :
+  bash 5.2, fzf 0.60, git 2.47, OpenSSH 10.0, tmux 3.5 ; vérifier qu'une option
+  y existe avant de l'utiliser. Sur Debian, bat s'appelle `batcat` et fd
+  `fdfind` ; k9s n'y est pas packagé.
 - Un outil manquant se signale dans `<paquet>/check.sh` (avertissement), pas
   dans `hook.sh` : `check.sh` tourne à chaque `dotfiles update`.
 
@@ -49,7 +50,7 @@ qui concerne la façon d'y travailler.
 
 `tests/e2e.sh [branche]` installe `master` puis la branche dans un HOME
 jetable, avec un serveur tmux de test, et vérifie qu'un bash interactif
-s'ouvre sans erreur ; `--debian` refait le test dans un conteneur Debian 12.
+s'ouvre sans erreur ; `--debian` refait le test dans un conteneur Debian 13.
 Le lancer avant de proposer une branche qui touche à l'installateur, aux hooks
 ou à `.bashrc.d`. Il teste les commits, pas les modifications non commitées.
 

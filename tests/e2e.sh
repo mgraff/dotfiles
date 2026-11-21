@@ -6,7 +6,7 @@
 #
 #   branche   branche à tester (par défaut : la branche courante du dépôt)
 #   base      branche installée d'abord (par défaut : master)
-#   --debian  lance le même test dans un conteneur Debian 12 (podman)
+#   --debian  lance le même test dans un conteneur Debian 13 (podman)
 #   --keep    garde le HOME jetable pour l'inspecter
 #
 # Le dépôt local sert de source : les commits non poussés sont testés aussi,
@@ -44,9 +44,9 @@ done
 [[ -z $(git -C "$repo" status --porcelain) ]] ||
     echo "e2e: warning: uncommitted changes are not tested" >&2
 
-# Même test dans Debian 12 : le dépôt est monté en lecture seule
+# Même test dans Debian 13 : le dépôt est monté en lecture seule
 if [[ -n $debian ]]; then
-    exec podman run --rm -v "$repo:/repo:ro,Z" docker.io/library/debian:12 bash -c '
+    exec podman run --rm -v "$repo:/repo:ro,Z" docker.io/library/debian:13 bash -c '
         apt-get -qq update >/dev/null &&
         apt-get -qq install -y git tmux fzf ripgrep bat bash-completion less procps >/dev/null 2>&1 ||
             { echo "e2e: apt-get failed" >&2; exit 1; }
