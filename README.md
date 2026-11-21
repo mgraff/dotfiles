@@ -61,8 +61,10 @@ dotfiles status      dépôt, version installée, prochaine mise à jour
 dotfiles rollback    revenir à la version précédente
 ```
 
-Une mise à jour s'applique aux **nouveaux** shells ; dans un shell ouvert :
-`exec bash`.
+`dotfiles update`, `switch` et `rollback` relancent le shell (`exec bash`)
+quand la version installée change, sauf si des tâches tournent en arrière-plan.
+Les autres shells ouverts, et ceux mis à jour par le timer, affichent un rappel
+à leur prochain prompt : y taper `exec bash`.
 
 ## Modifier la configuration
 
@@ -74,7 +76,7 @@ suivante.
 ## Tester une branche
 
 1. Pousser les modifications sur une branche, par exemple `essai`.
-2. Sur la machine de test : `dotfiles switch essai`, puis `exec bash`.
+2. Sur la machine de test : `dotfiles switch essai`.
 3. Corriger, pousser, puis `dotfiles update` (le timer suit aussi la branche).
 4. Une fois la branche fusionnée dans master : `dotfiles switch master`. Si la
    branche a été supprimée du dépôt, la mise à jour suivante revient d'elle-même
