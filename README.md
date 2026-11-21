@@ -37,6 +37,8 @@ git/check.sh            signale une identité manquante
 ssh/home/…              ~/.ssh/config (réglages communs)
 ssh/requires            installé seulement si ssh est présent
 ssh/hook.sh             crée ~/.ssh/config.local et ~/.ssh/sockets, droits de ~/.ssh
+dig/home/…              ~/.digrc (seulement la réponse ; dig +all pour tout)
+dig/requires            installé seulement si dig est présent
 ```
 
 - Un dossier par paquet : tout ce qui est dans `<paquet>/home/` est placé dans
