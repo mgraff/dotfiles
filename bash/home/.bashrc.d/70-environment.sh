@@ -40,10 +40,11 @@ shopt -s checkjobs  # exit prévient s'il reste des tâches ; un 2e exit force
 # Saisie de la phrase de passe GPG dans le terminal (réglé par Fedora, pas Debian)
 export GPG_TTY=${GPG_TTY:-$(tty)}
 
-# bc : calcul décimal et fonctions mathématiques (-l : scale=20, s(), c(),
-# l(), e(), sqrt()), sans la bannière de démarrage (-q).
+# bc : calcul avec 2 décimales (tronquées, pas arrondies : 2/3 donne .66 ;
+# « scale=5 » pour plus de précision) et fonctions mathématiques (-l : s(),
+# c(), l(), e(), sqrt()), sans la bannière de démarrage (-q).
 # Fonction plutôt que BC_ENV_ARGS : exportée, cette variable changerait aussi
-# le résultat des scripts qui utilisent bc (10/3 y donnerait 3.33… et non 3).
+# le résultat des scripts qui utilisent bc (10/3 y donnerait 3.33 et non 3).
 bc() {
-    command bc -lq "$@"
+    command bc -lq <(echo scale=2) "$@"
 }
