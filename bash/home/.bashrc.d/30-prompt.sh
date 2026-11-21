@@ -6,7 +6,8 @@
 # À gauche, où l'on est :
 # - conteneur toolbox/distrobox, utilisateur@machine seulement en root ou SSH
 #   (même après « sudo su - »)
-# - dossier : 3 derniers niveaux, relatif à la racine du dépôt git
+# - dossier : chemin complet, parents grisés, racine du dépôt git en gras ;
+#   des dossiers du milieu deviennent « … » seulement si la ligne déborde
 # À droite, le contexte, séparé par des « · » :
 # - git : branche, opération en cours, état
 #     = conflit  $ stash  ✘ supprimé  » renommé  ! modifié  + indexé  ? non suivi
@@ -22,6 +23,7 @@
 declare -A __prompt_c=(
     [reset]=$'\001\e[0m\002'
     [cyan]=$'\001\e[1;36m\002'
+    [bold]=$'\001\e[1m\002'
     [blue]=$'\001\e[1;34m\002'
     [purple]=$'\001\e[1;35m\002'
     [red]=$'\001\e[1;31m\002'
@@ -71,18 +73,72 @@ __prompt_status() {
     return $__prompt_exit
 }
 
-# $1 : racine du dépôt git (vide hors dépôt)
+# Largeur affichée du dossier dans width : éléments de parts, « / », un « … »
+# par groupe d'éléments masqués (hide), cadenas. Utilise les variables locales
+# de __prompt_dir.
+__prompt_dir_width() {
+    local k
+    width=$(( ${#lock} ? 2 : 0 ))
+    for (( k = 0; k < n; k++ )); do
+        if [[ -z ${hide[k]} ]]; then
+            (( width += (k > 0) + ${#parts[k]} ))
+        elif [[ -z ${hide[k-1]} ]]; then
+            (( width += 2 ))  # « /… »
+        fi
+    done
+}
+
+# Ajoute le dossier courant à __prompt_line : chemin complet, parents grisés,
+# racine du dépôt git en gras, dossier courant en cyan. S'il dépasse $2
+# colonnes, des dossiers du milieu sont remplacés par « … », en commençant
+# par la gauche ; le début (~ ou /), la racine du dépôt et le dossier courant
+# restent toujours visibles.
+# $1 : racine du dépôt git (vide hors dépôt)   $2 : largeur disponible
 __prompt_dir() {
-    local top=$1 dir=$PWD
-    if [[ -n $top && $top != "$HOME" && ( $PWD == "$top" || $PWD == "$top"/* ) ]]; then
-        dir=${top##*/}${PWD#"$top"}
-    elif [[ $PWD == "$HOME" || $PWD == "$HOME"/* ]]; then
-        dir="~${PWD#"$HOME"}"
+    local top=$1 avail=$2 path=$PWD lock= root=-1 i n width
+    local -a parts hide=()
+
+    [[ -w $PWD ]] || lock="${__prompt_c[red]} ${__prompt_c[reset]}"
+    if [[ $PWD == / ]]; then
+        __prompt_line+="${__prompt_c[cyan]}/${__prompt_c[reset]}$lock"
+        return
     fi
-    # Garder les 3 derniers niveaux
-    [[ $dir =~ ^.+/([^/]+/[^/]+/[^/]+)$ ]] && dir=${BASH_REMATCH[1]}
-    __prompt_line+="${__prompt_c[cyan]}${dir}${__prompt_c[reset]}"
-    [[ -w $PWD ]] || __prompt_line+="${__prompt_c[red]} ${__prompt_c[reset]}"
+
+    # « ~/a/b » -> (~ a b) ; « /srv/x » -> ("" srv x)
+    [[ $PWD == "$HOME" || $PWD == "$HOME"/* ]] && path="~${PWD#"$HOME"}"
+    IFS=/ read -ra parts <<<"$path"
+    n=${#parts[@]}
+
+    # Indice de la racine du dépôt (le dépôt qui serait ~ lui-même ne compte pas)
+    if [[ -n $top && $top != "$HOME" && ( $PWD == "$top" || $PWD == "$top"/* ) ]]; then
+        local rest=${PWD#"$top"} tail=()
+        IFS=/ read -ra tail <<<"${rest#/}"
+        root=$(( n - 1 - ${#tail[@]} ))
+    fi
+
+    __prompt_dir_width
+    for (( i = 1; i < n - 1 && width > avail; i++ )); do
+        (( i == root )) && continue
+        hide[i]=1
+        __prompt_dir_width
+    done
+
+    local dim=${__prompt_c[dim]} reset=${__prompt_c[reset]} out=
+    for (( i = 0; i < n; i++ )); do
+        if [[ -n ${hide[i]} ]]; then
+            [[ -n ${hide[i-1]} ]] || out+="${dim}/…${reset}"
+            continue
+        fi
+        (( i )) && out+="${dim}/${reset}"
+        if (( i == n - 1 )); then
+            out+="${__prompt_c[cyan]}${parts[i]}${reset}"
+        elif (( i == root )); then
+            out+="${__prompt_c[bold]}${parts[i]}${reset}"
+        else
+            out+="${dim}${parts[i]}${reset}"
+        fi
+    done
+    __prompt_line+=$out$lock
 }
 
 # Ajoute le segment git à __prompt_right. $1 : dossier .git
@@ -171,7 +227,6 @@ __prompt_render() {
 
     command -v git >/dev/null &&
         mapfile -t git < <(git rev-parse --show-toplevel --absolute-git-dir 2>/dev/null)
-    __prompt_dir "${git[0]}"
     (( ${#git[@]} == 2 )) && __prompt_git "${git[1]}"
     declare -F __prompt_compose >/dev/null && __prompt_compose "${git[0]}"
 
@@ -198,15 +253,18 @@ __prompt_render() {
         right+=" ${__prompt_c[dim]}·${__prompt_c[reset]} $part"
     done
 
+    # Le dossier prend la place qui reste, la dernière colonne restant libre
+    # pour éviter un retour à la ligne, plus un espace avant la partie droite
+    local pad=$(( COLUMNS - 1 ))
+    __prompt_width "$right"; (( pad -= __prompt_w ))
+    __prompt_width "$__prompt_line"
+    __prompt_dir "${git[0]}" $(( pad - __prompt_w - 1 ))
+
     # Aligner la partie droite sur le bord du terminal (simple espace si trop long)
-    if [[ -n $right ]]; then
-        local pad=$(( COLUMNS - 1 ))  # dernière colonne libre : évite un retour à la ligne
-        __prompt_width "$__prompt_line"; (( pad -= __prompt_w ))
-        __prompt_width "$right";         (( pad -= __prompt_w ))
-        (( pad < 1 )) && pad=1
-        printf -v pad '%*s' "$pad" ''
-        __prompt_line+=$pad$right
-    fi
+    __prompt_width "$__prompt_line"; (( pad -= __prompt_w ))
+    (( pad < 1 )) && pad=1
+    printf -v pad '%*s' "$pad" ''
+    __prompt_line+=$pad$right
 
     # Ligne vide avant chaque prompt, sauf le tout premier
     __prompt_nl=${__prompt_drawn:+$'\n'}
