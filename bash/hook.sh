@@ -32,6 +32,16 @@ if [[ -f $dir/pip ]] && command -v pip3 >/dev/null; then
         'complete -o default -F _pip_completion pip3' >"$dir/pip3"
 fi
 
+# Avertissement en jaune gras pour ne pas le rater, seulement dans un terminal
+# (pas de codes couleur dans le journal du timer) et sauf si NO_COLOR est défini
+warn() {
+    if [[ -t 2 && -z ${NO_COLOR:-} ]]; then
+        printf '\e[1;33m%s\e[0m\n' "$*" >&2
+    else
+        printf '%s\n' "$*" >&2
+    fi
+}
+
 # Outils dont la configuration a besoin, signalés en une ligne avec la
 # commande d'installation de la distribution (nom de paquet : commande(s))
 declare -A tools=(
@@ -61,7 +71,7 @@ if (( ${#missing[@]} )); then
             *" debian "*) install="sudo apt install ${missing[*]}" ;;
         esac
     fi
-    echo "dotfiles: missing tools: ${missing[*]}${install:+ (install: $install)}" >&2
+    warn "dotfiles: missing tools: ${missing[*]}${install:+ (install: $install)}"
 fi
 (( BASH_VERSINFO[0] > 4 )) ||
-    echo "dotfiles: bash ${BASH_VERSION} is too old, version 5 or later is required" >&2
+    warn "dotfiles: bash ${BASH_VERSION} is too old, version 5 or later is required"
