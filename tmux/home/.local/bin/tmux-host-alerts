@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Alertes de la machine, pour la barre d'état de tmux, à côté du nom d'hôte :
-#   badge « ⚠ ↻ » dans le style $1, rien si tout va bien
+#   badge « ⚠ ↻ » dans le style $1, rien si tout va bien ; le style n'est pas
+#   refermé, pour que d'autres badges puissent suivre sans espace
 #   ⚠  des services systemd sont en échec (système ou utilisateur)
 #   ↻  redémarrage nécessaire : noyau plus récent installé que celui en cours,
 #      ou /run/reboot-required (créé par Debian après certaines mises à jour)
@@ -38,5 +39,5 @@ else
 fi
 [[ -n $reboot ]] && alerts+=($'\U000f0709')
 
-(( ${#alerts[@]} )) && printf ' #[%s] %s #[default]' "$style" "${alerts[*]}"
+(( ${#alerts[@]} )) && printf '#[%s] %s ' "$style" "${alerts[*]}"
 exit 0
