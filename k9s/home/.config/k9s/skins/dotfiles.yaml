@@ -1,0 +1,96 @@
+# Skin assortie à la barre tmux : fond du terminal (default), accents rouge vif
+# (red = couleur 9 du terminal, comme brightred dans tmux), gris 245 (#8a8a8a)
+# pour les éléments secondaires.
+k9s:
+  body:
+    fgColor: default
+    bgColor: default
+    logoColor: red
+  prompt:
+    fgColor: default
+    bgColor: default
+    suggestColor: "#8a8a8a"
+  info:
+    fgColor: red
+    sectionColor: default
+    k9sRevColor: "#8a8a8a"
+    cpuColor: default
+    memColor: default
+  help:
+    fgColor: default
+    bgColor: default
+    keyColor: red
+    numKeyColor: red
+    sectionColor: "#8a8a8a"
+  dialog:
+    fgColor: default
+    bgColor: default
+    buttonFgColor: black
+    buttonBgColor: "#8a8a8a"
+    buttonFocusFgColor: black
+    buttonFocusBgColor: red
+    labelFgColor: red
+    fieldFgColor: default
+  frame:
+    border:
+      fgColor: "#8a8a8a"
+      focusColor: red
+    menu:
+      fgColor: "#8a8a8a"
+      keyColor: red
+      numKeyColor: red
+    crumbs:
+      fgColor: black
+      bgColor: "#8a8a8a"
+      activeColor: red
+    status:
+      newColor: default
+      modifyColor: yellow
+      addColor: green
+      errorColor: red
+      highlightColor: red
+      killColor: "#8a8a8a"
+      completedColor: "#8a8a8a"
+    title:
+      fgColor: default
+      bgColor: default
+      highlightColor: red
+      counterColor: "#8a8a8a"
+      filterColor: red
+  views:
+    charts:
+      bgColor: default
+      defaultDialColors:
+        - red
+        - "#8a8a8a"
+      defaultChartColors:
+        - red
+        - "#8a8a8a"
+    table:
+      fgColor: default
+      bgColor: default
+      cursorFgColor: black
+      cursorBgColor: red
+      markColor: yellow
+      header:
+        fgColor: "#8a8a8a"
+        bgColor: default
+        sorterColor: red
+    xray:
+      fgColor: default
+      bgColor: default
+      cursorColor: red
+      graphicColor: "#8a8a8a"
+      showIcons: true
+    yaml:
+      keyColor: red
+      colonColor: "#8a8a8a"
+      valueColor: default
+    logs:
+      fgColor: default
+      bgColor: default
+      indicator:
+        fgColor: default
+        bgColor: default
+        toggleOnColor: red
+        toggleOffColor: "#8a8a8a"

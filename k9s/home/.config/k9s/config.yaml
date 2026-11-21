@@ -1,0 +1,26 @@
+# Configuration k9s commune à toutes les machines (k9s ne la réécrit pas).
+# Les réglages propres à un cluster (namespace, vue, lecture seule…) sont dans
+# ~/.local/share/k9s/clusters/<cluster>/<contexte>/config.yaml, hors du dépôt.
+k9s:
+  # Lecture seule partout : ni suppression, ni édition, ni shell, ni scale.
+  # Pour agir sur un contexte, dans son config.yaml local :
+  #   k9s:
+  #     readOnly: false
+  # ou, pour une seule session : k9s --write
+  readOnly: true
+  refreshRate: 2
+  ui:
+    # Assortie à la barre tmux (skins/dotfiles.yaml)
+    skin: dotfiles
+    # Pas de logo : plus de place pour l'en-tête du cluster
+    logoless: true
+    # Recharge la configuration et la skin dès qu'elles changent
+    reactive: true
+    enableMouse: false
+  logger:
+    # 200 dernières lignes au lieu de 100, avec l'heure, lignes longues repliées
+    tail: 200
+    buffer: 5000
+    sinceSeconds: -1
+    showTime: true
+    textWrap: true

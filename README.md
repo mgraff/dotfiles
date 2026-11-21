@@ -41,6 +41,9 @@ ssh/requires            installé seulement si ssh est présent
 ssh/hook.sh             crée ~/.ssh/config.local et ~/.ssh/sockets, droits de ~/.ssh
 dig/home/…              ~/.digrc (seulement la réponse ; dig +all pour tout)
 dig/requires            installé seulement si dig est présent
+k9s/home/…              ~/.config/k9s/config.yaml (lecture seule par défaut)
+                        et ~/.config/k9s/skins/dotfiles.yaml (couleurs de tmux)
+k9s/requires            installé seulement si k9s est présent
 ```
 
 - Un dossier par paquet : tout ce qui est dans `<paquet>/home/` est placé dans
@@ -131,4 +134,8 @@ suivante.
   hôte` pour une connexion séparée. Un hôte inconnu est accepté sans question ;
   une clé d'hôte qui a changé est toujours refusée. Un hôte injoignable
   échoue au bout de 10 s.
+- **k9s** : en lecture seule sur tous les contextes. Pour pouvoir agir sur un
+  contexte, mettre `readOnly: false` sous `k9s:` dans son fichier local
+  `~/.local/share/k9s/clusters/<cluster>/<contexte>/config.yaml` ; pour une
+  seule session, `k9s --write`.
 - **Dépôt public** : ne jamais y mettre de secret.
