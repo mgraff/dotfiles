@@ -18,6 +18,8 @@ Les fichiers déjà présents à la place des nouveaux sont déplacés dans
 
 ```
 install.sh              installe et met à jour (devient la commande « dotfiles »)
+tests/e2e.sh            teste une branche dans un HOME jetable (--debian : Debian 12)
+CLAUDE.md               consignes pour Claude Code
 bash/home/…             ~/.bashrc, ~/.inputrc, ~/.bashrc.d/…
                         et la complétion de la commande dotfiles
 bash/hook.sh            complétions kubectl/npm/pip/toolbox
