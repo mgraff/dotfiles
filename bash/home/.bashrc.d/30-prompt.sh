@@ -5,6 +5,7 @@
 #
 # À gauche, où l'on est :
 # - conteneur toolbox/distrobox, utilisateur@machine seulement en root ou SSH
+#   (même après « sudo su - »)
 # - dossier : 3 derniers niveaux, relatif à la racine du dépôt git
 # À droite, le contexte, séparé par des « · » :
 # - git : branche, opération en cours, état
@@ -37,6 +38,25 @@ if [[ -f /run/.containerenv ]]; then
     : "${__prompt_container:=container}"
 elif [[ -n $CONTAINER_ID ]]; then
     __prompt_container=$CONTAINER_ID
+fi
+
+# Session SSH : SSH_CONNECTION disparaît après « sudo su - » ou « sudo -i »,
+# on cherche donc aussi sshd parmi les processus parents (une fois, au démarrage)
+__prompt_ssh=${SSH_CONNECTION:+1}
+if [[ -z $__prompt_ssh ]]; then
+    __prompt_pid=$PPID
+    while (( __prompt_pid > 1 )) && read -r __prompt_comm 2>/dev/null </proc/$__prompt_pid/comm; do
+        if [[ $__prompt_comm == sshd* ]]; then
+            __prompt_ssh=1
+            break
+        fi
+        # Ligne « PPid: <pid> » de /proc/<pid>/status
+        while read -r __prompt_key __prompt_val; do
+            [[ $__prompt_key == PPid: ]] && break
+        done </proc/$__prompt_pid/status
+        __prompt_pid=$__prompt_val
+    done
+    unset __prompt_pid __prompt_comm __prompt_key __prompt_val
 fi
 
 # Premier élément de PROMPT_COMMAND : récupère le code de retour et la durée,
@@ -138,13 +158,13 @@ __prompt_render() {
     [[ -n $__prompt_container ]] &&
         __prompt_line+="${__prompt_c[dimred]}⬢ [${__prompt_container}]${__prompt_c[reset]} "
 
-    if (( EUID == 0 )) || [[ -n $SSH_CONNECTION ]]; then
+    if (( EUID == 0 )) || [[ -n $__prompt_ssh ]]; then
         if (( EUID == 0 )); then
             __prompt_line+="${__prompt_c[red]}${USER:-$(id -un)}${__prompt_c[reset]}"
         else
             __prompt_line+="${__prompt_c[yellow]}${USER:-$(id -un)}${__prompt_c[reset]}"
         fi
-        [[ -n $SSH_CONNECTION ]] &&
+        [[ -n $__prompt_ssh ]] &&
             __prompt_line+="@${__prompt_c[dimgreen]}${HOSTNAME%%.*}${__prompt_c[reset]}"
         __prompt_line+=" "
     fi
