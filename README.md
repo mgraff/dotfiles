@@ -28,6 +28,10 @@ tmux/home/…             ~/.tmux.conf
                         et ~/.local/bin/tmux-host-alerts (badge : services en échec, redémarrage)
 tmux/requires           installé seulement si tmux est présent
 tmux/hook.sh            recharge la configuration du serveur tmux en cours
+git/home/…              ~/.config/git/config (réglages communs)
+                        et ~/.config/git/ignore (fichiers ignorés partout)
+git/requires            installé seulement si git est présent
+git/hook.sh             crée ~/.gitconfig, signale une identité manquante
 ```
 
 - Un dossier par paquet : tout ce qui est dans `<paquet>/home/` est placé dans
@@ -38,7 +42,7 @@ tmux/hook.sh            recharge la configuration du serveur tmux en cours
   une par ligne. S'il en manque une, le paquet est ignoré : ses fichiers ne sont
   pas installés (ou sont retirés s'ils l'étaient) et son hook n'est pas lancé.
   Dès que l'outil est installé, la mise à jour suivante installe le paquet.
-- Pour ajouter un paquet, par exemple git : créer `git/home/.gitconfig`.
+- Pour ajouter un paquet, par exemple htop : créer `htop/home/.config/htop/htoprc`.
 
 ## Fonctionnement
 
@@ -97,4 +101,9 @@ suivante.
   sinon vi.
 - **Nerd Font** : à installer sur le poste depuis lequel on se connecte, pas sur
   les serveurs.
+- **git** : l'identité (`user.name`, `user.email`) n'est pas dans le dépôt,
+  elle est propre à chaque machine. La définir avec `git config --global`, qui
+  écrit dans `~/.gitconfig`, un fichier local qui l'emporte sur
+  `~/.config/git/config`. Tant qu'elle manque, git refuse de commiter. Les
+  dépôts GitHub clonés en https sont poussés en ssh.
 - **Dépôt public** : ne jamais y mettre de secret.

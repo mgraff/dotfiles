@@ -1,0 +1,17 @@
+# Fichiers ignorés dans tous les dépôts (chemin par défaut de core.excludesFile)
+
+# Éditeurs
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Environnements locaux
+.direnv/
+.venv/
+__pycache__/

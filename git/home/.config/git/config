@@ -1,0 +1,61 @@
+# Configuration git commune à toutes les machines.
+#
+# Git lit ce fichier (~/.config/git/config) puis ~/.gitconfig, qui l'emporte.
+# ~/.gitconfig reste un fichier local, hors du dépôt : il garde l'identité
+# (user.name, user.email), différente selon la machine, et reçoit les
+# « git config --global ». Le hook le crée s'il n'existe pas.
+
+[user]
+	# Pas d'identité devinée à partir du nom de la machine : sans user.email
+	# dans ~/.gitconfig, git refuse de commiter au lieu d'inventer une adresse.
+	useConfigOnly = true
+
+[pull]
+	# Rejoue les commits locaux au-dessus de ceux récupérés, sans commit de merge
+	rebase = true
+
+[rebase]
+	# Met de côté les modifications non commitées le temps du rebase
+	autoStash = true
+
+[push]
+	# Le premier push d'une nouvelle branche crée et suit la branche distante
+	autoSetupRemote = true
+
+[fetch]
+	# Oublie les branches supprimées sur le dépôt distant
+	prune = true
+	pruneTags = true
+
+[diff]
+	# Diffs plus lisibles (blocs déplacés détectés et colorés à part)
+	algorithm = histogram
+	colorMoved = default
+
+[merge]
+	# En cas de conflit, montre aussi la version d'origine des deux côtés
+	conflictStyle = zdiff3
+
+[rerere]
+	# Retient la résolution d'un conflit et la réapplique s'il revient
+	enabled = true
+
+[commit]
+	# Montre le diff sous le message pendant l'écriture du commit
+	verbose = true
+
+[branch]
+	# git branch : les branches les plus récentes en premier
+	sort = -committerdate
+
+[tag]
+	# git tag : v1.10 après v1.9
+	sort = version:refname
+
+[help]
+	# Commande mal tapée : propose la bonne et demande avant de la lancer
+	autocorrect = prompt
+
+[url "git@github.com:"]
+	# Cloner GitHub en https, pousser en ssh (clé ssh nécessaire pour pousser)
+	pushInsteadOf = https://github.com/
