@@ -55,6 +55,7 @@ tmux/hook.sh            recharge la configuration du serveur tmux en cours
 
 ```
 dotfiles update      récupérer et appliquer le dernier commit
+dotfiles switch X    suivre la branche X (pour la tester) et l'installer
 dotfiles status      dépôt, version installée, prochaine mise à jour
 dotfiles rollback    revenir à la version précédente
 ```
@@ -68,6 +69,17 @@ Modifier dans ce dépôt (`~/repositories/dotfiles`), commiter et pousser, puis
 `dotfiles update` pour appliquer tout de suite. Ne pas modifier les fichiers de
 `~` : ce sont des liens vers une version extraite, remplacée à la mise à jour
 suivante.
+
+## Tester une branche
+
+1. Pousser les modifications sur une branche, par exemple `essai`.
+2. Sur la machine de test : `dotfiles switch essai`, puis `exec bash`.
+3. Corriger, pousser, puis `dotfiles update` (le timer suit aussi la branche).
+4. Une fois la branche fusionnée dans master : `dotfiles switch master`. Si la
+   branche a été supprimée du dépôt, la mise à jour suivante revient d'elle-même
+   sur master.
+
+`dotfiles status` affiche la branche suivie.
 
 ## À savoir
 

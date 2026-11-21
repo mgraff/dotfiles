@@ -5,6 +5,8 @@
 #                              git (https://github.com/…/dotfiles.git) ou un
 #                              chemin local
 #   dotfiles update            récupère le dernier commit et l'applique
+#   dotfiles switch <branche>  suit une autre branche (pour tester), et
+#                              l'installe ; « switch master » pour revenir
 #   dotfiles rollback          revient à la version précédente
 #   dotfiles status            dépôt, version installée, fichiers gérés
 #
@@ -19,6 +21,10 @@
 # la version active. Les fichiers de ~ sont des liens
 # vers « current » : changer de version est donc instantané pour tous à la fois.
 # Un fichier existant à la place d'un lien est déplacé dans backup/<date>.
+#
+# Branche suivie : celle de $CONFIG/branch, sinon la branche par défaut du
+# dépôt. Si elle disparaît du dépôt (supprimée après un merge), la mise à jour
+# suivante revient sur la branche par défaut.
 
 set -euo pipefail
 
@@ -31,9 +37,24 @@ say()  { printf '%s\n' "$*"; }
 warn() { printf 'dotfiles: %s\n' "$*" >&2; }
 die()  { warn "$*"; exit 1; }
 
-# Récupère les derniers commits du dépôt et affiche l'identifiant du plus récent
+# Branche par défaut du dépôt (celle de HEAD au moment du clone)
+default_branch() {
+    git --git-dir="$REPO" symbolic-ref --short HEAD 2>/dev/null || echo master
+}
+
+# Branche suivie
+branch() {
+    if [[ -f $CONFIG/branch ]]; then
+        cat "$CONFIG/branch"
+    else
+        default_branch
+    fi
+}
+
+# Récupère les derniers commits du dépôt et affiche l'identifiant du plus
+# récent de la branche suivie
 fetch() {
-    local source
+    local source branch
     source=$(<"$CONFIG/source")
     if [[ ! -d $REPO ]]; then
         git clone --quiet --bare "$source" "$REPO" || die "cannot clone $source"
@@ -41,7 +62,14 @@ fetch() {
         git --git-dir="$REPO" fetch --quiet --prune "$source" '+refs/heads/*:refs/heads/*' ||
             die "cannot fetch $source"
     fi
-    git --git-dir="$REPO" rev-parse HEAD
+    if [[ -f $CONFIG/branch ]]; then
+        branch=$(<"$CONFIG/branch")
+        if ! git --git-dir="$REPO" show-ref --verify --quiet "refs/heads/$branch"; then
+            warn "branch $branch no longer exists, back to $(default_branch)"
+            rm -f "$CONFIG/branch"
+        fi
+    fi
+    git --git-dir="$REPO" rev-parse "refs/heads/$(branch)^{commit}"
 }
 
 # Vérifie la syntaxe des fichiers shell avant de les installer
@@ -223,7 +251,7 @@ cmd_update() {
     mv "$tmp" "$DATA/releases/$name"
     activate "$name"
     prune
-    say "installed $(git --git-dir="$REPO" log -1 --format='%h "%s"' "$commit")"
+    say "installed $(git --git-dir="$REPO" log -1 --format='%h "%s"' "$commit") from $(branch)"
 }
 
 cmd_install() {
@@ -231,11 +259,30 @@ cmd_install() {
     [[ -n $source ]] || die "usage: dotfiles install <git repository>"
     [[ -d $source ]] && source=$(cd "$source" && pwd)
     # Nouveau dépôt : repartir d'un clone neuf
-    [[ $(cat "$CONFIG/source" 2>/dev/null) == "$source" ]] || rm -rf "$REPO"
+    if [[ $(cat "$CONFIG/source" 2>/dev/null) != "$source" ]]; then
+        rm -rf "$REPO"
+        rm -f "$CONFIG/branch"
+    fi
     mkdir -p "$CONFIG"
     printf '%s\n' "$source" >"$CONFIG/source"
     cmd_update
     setup
+}
+
+cmd_switch() {
+    local branch=${1:-} source
+    [[ -n $branch ]] || die "usage: dotfiles switch <branch>"
+    [[ -f $CONFIG/source ]] || die "no repository configured: dotfiles install <repository>"
+    source=$(<"$CONFIG/source")
+    git ls-remote --exit-code --heads "$source" "refs/heads/$branch" >/dev/null ||
+        die "no branch $branch in $source"
+    if [[ $branch == "$(default_branch)" ]]; then
+        rm -f "$CONFIG/branch"
+    else
+        mkdir -p "$CONFIG"
+        printf '%s\n' "$branch" >"$CONFIG/branch"
+    fi
+    cmd_update
 }
 
 cmd_rollback() {
@@ -253,6 +300,7 @@ cmd_status() {
     local current
     current=$(readlink "$DATA/current" 2>/dev/null) || current=
     say "repository: $(cat "$CONFIG/source" 2>/dev/null || echo 'none')"
+    say "branch:     $(branch)"
     if [[ -n $current ]]; then
         say "version:    ${current#releases/} $(git --git-dir="$REPO" log -1 --format='"%s", %cr' "${current##*-}" 2>/dev/null)"
     else
@@ -282,6 +330,8 @@ dotfiles: install and keep the same dotfiles up to date on every machine
   dotfiles install <repository>  first install; <repository> is a git URL
                                  (https://github.com/.../dotfiles.git) or a local path
   dotfiles update                fetch the latest commit and apply it
+  dotfiles switch <branch>       follow another branch (to test it) and install it;
+                                 "dotfiles switch master" to come back
   dotfiles rollback              go back to the previous version
   dotfiles status                repository, installed version, managed files
 EOF
@@ -290,6 +340,7 @@ EOF
 case ${1:-} in
     install)  shift; cmd_install "$@" ;;
     update)   cmd_update ;;
+    switch)   shift; cmd_switch "$@" ;;
     rollback) cmd_rollback ;;
     status)   cmd_status ;;
     *)        usage; exit 1 ;;
