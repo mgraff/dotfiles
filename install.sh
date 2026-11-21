@@ -170,12 +170,14 @@ link() {
     mv "$new_list" "$DATA/links"
 }
 
-# Active la version $1 (nom d'un dossier de releases) puis lance les hooks
+# Active la version $1 (nom d'un dossier de releases), affiche le message $2
+# une fois les fichiers en place, puis lance les hooks (rechargement de tmux…)
 activate() {
-    local release=$1 name miss
+    local release=$1 message=$2 name miss
     ln -sfn "releases/$release" "$DATA/current.new"
     mv -T "$DATA/current.new" "$DATA/current"
     link "$release"
+    say "$message"
     while read -r name; do
         miss=$(missing "$name")
         if [[ -n $miss ]]; then
@@ -258,8 +260,7 @@ cmd_update() {
             say "already up to date (${commit:0:7})"
         else
             # Un outil requis a été installé ou désinstallé depuis
-            activate "$(basename "$(readlink "$DATA/current")")"
-            say "packages updated (${commit:0:7})"
+            activate "$(basename "$(readlink "$DATA/current")")" "packages updated (${commit:0:7})"
         fi
         checks
         return
@@ -273,9 +274,8 @@ cmd_update() {
     while compgen -G "$DATA/releases/$(date +%Y%m%d-%H%M%S)-*" >/dev/null; do sleep 1; done
     name=$(date +%Y%m%d-%H%M%S)-${commit:0:7}
     mv "$tmp" "$DATA/releases/$name"
-    activate "$name"
+    activate "$name" "installed $(git --git-dir="$REPO" log -1 --format='%h "%s"' "$commit") from $(branch)"
     prune
-    say "installed $(git --git-dir="$REPO" log -1 --format='%h "%s"' "$commit") from $(branch)"
     checks
 }
 
@@ -317,8 +317,7 @@ cmd_rollback() {
     [[ -n $previous ]] || die "no previous version"
     exec 9>"$DATA/lock"
     flock -n 9 || die "an update is already running"
-    activate "$previous"
-    say "rolled back to $previous (the next update will reinstall the latest version)"
+    activate "$previous" "rolled back to $previous (the next update will reinstall the latest version)"
     checks
 }
 
