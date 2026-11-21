@@ -12,8 +12,8 @@
 # - ⟳ fichier compose ou .env modifié après la création des conteneurs
 #
 # La recherche du fichier s'arrête à la racine du dépôt git, sinon à $HOME.
-# L'état des conteneurs (podman, sinon docker) est gardé 10 s, et relu après
-# chaque commande qui mentionne compose, podman ou docker.
+# L'état des conteneurs (podman, ou docker s'il n'en voit aucun) est gardé 10 s,
+# et relu après chaque commande qui mentionne compose, podman ou docker.
 
 [[ $- == *i* ]] || return 0
 
@@ -108,16 +108,27 @@ __compose_parse() {
 
 # Conteneurs du projet, une ligne par conteneur :
 # service|état|statut|redémarrages|création (epoch, 0 si inconnue)
+# podman d'abord ; docker si podman n'en connaît aucun (les deux peuvent être
+# installés sur la même machine)
 __compose_ps() {
+    local filter="label=com.docker.compose.project=$__compose_name" out i
+    local -a lines created
     if command -v podman >/dev/null; then
-        podman ps -a --filter "label=com.docker.compose.project=$__compose_name" \
-            --format '{{.Label "com.docker.compose.service"}}|{{.State}}|{{.Status}}|{{.Restarts}}|{{.Created.Unix}}'
-    elif command -v docker >/dev/null; then
-        docker ps -a --filter "label=com.docker.compose.project=$__compose_name" \
-            --format '{{.Label "com.docker.compose.service"}}|{{.State}}|{{.Status}}|0|0'
-    else
-        return 1
+        out=$(podman ps -a --filter "$filter" \
+            --format '{{.Label "com.docker.compose.service"}}|{{.State}}|{{.Status}}|{{.Restarts}}|{{.Created.Unix}}')
+        [[ -n $out ]] && { printf '%s\n' "$out"; return; }
     fi
+    command -v docker >/dev/null || return 0
+
+    # docker ne donne ni le nombre de redémarrages ni une date en epoch :
+    # « 2026-11-20 10:06:00 +0100 CET », convertie en un seul appel à date
+    mapfile -t lines < <(docker ps -a --filter "$filter" \
+        --format '{{.Label "com.docker.compose.service"}}|{{.State}}|{{.Status}}|0|{{.CreatedAt}}')
+    (( ${#lines[@]} )) || return 0
+    mapfile -t created < <(printf '%s\n' "${lines[@]##*|}" | sed 's/ [A-Za-z]*$//' | date -f - +%s)
+    for i in "${!lines[@]}"; do
+        printf '%s|%s\n' "${lines[i]%|*}" "${created[i]:-0}"
+    done
 } 2>/dev/null
 
 # Recalcule __compose_seg pour le projet de __compose_files
