@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Alertes de la machine, pour la barre d'état de tmux, à côté du nom d'hôte :
+#   « (⚠ ↻) » dans le style $1, rien si tout va bien
+#   ⚠  des services systemd sont en échec (système ou utilisateur)
+#   ↻  redémarrage nécessaire : noyau plus récent installé que celui en cours,
+#      ou /run/reboot-required (créé par Debian après certaines mises à jour)
+# Utilise le bus D-Bus système : fonctionne aussi sur un serveur, en SSH.
+
+style=${1:-default}
+alerts=()
+
+# Nombre de services en échec ($@ : --user pour ceux de l'utilisateur)
+failed() {
+    local out
+    out=$(busctl "$@" --timeout=1 get-property org.freedesktop.systemd1 /org/freedesktop/systemd1 \
+        org.freedesktop.systemd1.Manager NFailedUnits 2>/dev/null) || return 1
+    (( ${out#u } > 0 ))
+}
+if failed || failed --user; then
+    alerts+=($'⚠')
+fi
+
+# Noyaux installés : les dossiers de /lib/modules avec modules.dep (les autres
+# sont des restes de noyaux désinstallés)
+reboot=
+if [[ -e /run/reboot-required ]]; then
+    reboot=1
+else
+    kernels=()
+    for dep in /lib/modules/*/modules.dep; do
+        dep=${dep%/modules.dep}
+        [[ -d $dep ]] && kernels+=("${dep##*/}")
+    done
+    if (( ${#kernels[@]} )); then
+        newest=$(printf '%s\n' "${kernels[@]}" | sort -V | tail -n 1)
+        [[ $newest != "$(uname -r)" ]] && reboot=1
+    fi
+fi
+[[ -n $reboot ]] && alerts+=($'\U000f0709')
+
+(( ${#alerts[@]} )) && printf ' #[%s](%s)#[default]' "$style" "${alerts[*]}"
+exit 0
