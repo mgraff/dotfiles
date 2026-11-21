@@ -10,6 +10,10 @@
 	# dans ~/.gitconfig, git refuse de commiter au lieu d'inventer une adresse.
 	useConfigOnly = true
 
+[init]
+	# Branche créée par git init (sans réglage, git affiche un avertissement)
+	defaultBranch = master
+
 [pull]
 	# Rejoue les commits locaux au-dessus de ceux récupérés, sans commit de merge
 	rebase = true
