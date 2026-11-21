@@ -48,6 +48,36 @@
 	# Montre le diff sous le message pendant l'écriture du commit
 	verbose = true
 
+[pretty]
+	# Une ligne par commit : hash, branches et tags, sujet, auteur, date relative.
+	# Format complet à la demande : git log --format=medium
+	compact = %C(yellow)%h%C(auto)%d%Creset %s %C(dim)— %an, %ar%Creset
+
+[format]
+	# Format par défaut de git log et git show
+	pretty = compact
+
+[log]
+	abbrevCommit = true
+	# git log <fichier> suit le fichier à travers ses renommages
+	follow = true
+	# Dates absolues (git log --format=medium, git blame…) au format ISO
+	date = iso-local
+
+[status]
+	# Statut court (deux colonnes) avec la branche et l'avance/le retard
+	short = true
+	branch = true
+
+[grep]
+	# git grep : numéros de ligne, expressions régulières Perl
+	lineNumber = true
+	patternType = perl
+
+[column]
+	# git branch, git tag… : plusieurs colonnes quand ça tient
+	ui = auto
+
 [branch]
 	# git branch : les branches les plus récentes en premier
 	sort = -committerdate
