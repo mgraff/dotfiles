@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Morceau en cours, pour la barre d'état de tmux :
+#   « <icône> Artiste – Titre » dans le style $1 en lecture, $2 en pause
+# Rien si aucune source ne joue (lecteur fermé, pas de session graphique…).
+#
+# Sources, par ordre de priorité : la première en lecture l'emporte, sinon
+# la première en pause. Pour en ajouter une, écrire une fonction source_<nom>
+# qui remplit state (Playing ou Paused), icon et text, ou échoue, puis
+# ajouter <nom> à la liste.
+sources=(spotify)
+
+play_style=${1:-default} pause_style=${2:-default}
+max=40  # longueur maximale du texte
+icon_pause=$''
+
+# Propriété $2 du lecteur MPRIS $1, en JSON
+mpris_get() {
+    busctl --user --timeout=1 --json=short get-property "org.mpris.MediaPlayer2.$1" \
+        /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player "$2" 2>/dev/null
+}
+
+# Lecteurs qui publient le morceau sur le bus D-Bus de la session (interface
+# MPRIS), lus avec busctl, fourni avec systemd.
+# $1 : nom du lecteur sur le bus (org.mpris.MediaPlayer2.<nom>)
+mpris() {
+    local meta str='"((\\.|[^"\\])*)"'
+    state=$(mpris_get "$1" PlaybackStatus) || return 1
+    [[ $state =~ \"(Playing|Paused)\" ]] || return 1
+    state=${BASH_REMATCH[1]}
+    meta=$(mpris_get "$1" Metadata) || return 1
+
+    # str : chaîne JSON, sans « " » ni « \ » sauf échappés
+    [[ $meta =~ \"xesam:title\":\{\"type\":\"s\",\"data\":$str ]] || return 1
+    text=${BASH_REMATCH[1]}
+    [[ $meta =~ \"xesam:artist\":\{\"type\":\"as\",\"data\":\[$str ]] &&
+        text="${BASH_REMATCH[1]} – $text"
+    text=${text//\\\"/\"}
+    text=${text//\\\\/\\}
+}
+
+source_spotify() {
+    icon=$''
+    mpris spotify
+}
+
+best= best_icon= best_text=
+for name in "${sources[@]}"; do
+    state= icon= text=
+    source_"$name" || continue
+    if [[ $state == Playing ]]; then
+        best=Playing best_icon=$icon best_text=$text
+        break
+    fi
+    [[ -z $best ]] && best=Paused best_icon=$icon_pause best_text=$text
+done
+[[ -n $best ]] || exit 0
+
+(( ${#best_text} > max )) && best_text="${best_text:0:max-1}…"
+best_text=${best_text//#/##}  # « # » introduit un format pour tmux
+if [[ $best == Playing ]]; then
+    printf '#[%s]%s %s#[default]  ' "$play_style" "$best_icon" "$best_text"
+else
+    printf '#[%s]%s %s#[default]  ' "$pause_style" "$best_icon" "$best_text"
+fi

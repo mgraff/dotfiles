@@ -24,6 +24,7 @@ bash/hook.sh            complétions kubectl/npm/pip/toolbox, outils manquants
 nvim/home/…             ~/.config/nvim/init.lua (léger, sans plugin)
 nvim/requires           installé seulement si nvim est présent
 tmux/home/…             ~/.tmux.conf
+                        et ~/.local/bin/tmux-now-playing (Spotify dans la barre)
 tmux/requires           installé seulement si tmux est présent
 tmux/hook.sh            recharge la configuration du serveur tmux en cours
 ```
