@@ -8,6 +8,7 @@
 # - git : branche, opération en cours, état
 #     = conflit  $ stash  ✘ supprimé  » renommé  ! modifié  + indexé  ? non suivi
 #     ⇡ en avance  ⇣ en retard  ⇕ divergé
+# - projet compose : voir 35-compose.sh
 # - à droite : code de retour si ≠ 0, durée de la commande si elle dépasse 2 s,
 #   heure (discrète)
 # - « ❯ » vert, ou rouge si la dernière commande a échoué
@@ -18,6 +19,7 @@
 declare -A __prompt_c=(
     [reset]=$'\001\e[0m\002'
     [cyan]=$'\001\e[1;36m\002'
+    [blue]=$'\001\e[1;34m\002'
     [purple]=$'\001\e[1;35m\002'
     [red]=$'\001\e[1;31m\002'
     [dimred]=$'\001\e[1;2;31m\002'
@@ -148,6 +150,7 @@ __prompt_render() {
         mapfile -t git < <(git rev-parse --show-toplevel --absolute-git-dir 2>/dev/null)
     __prompt_dir "${git[0]}"
     (( ${#git[@]} == 2 )) && __prompt_git "${git[1]}"
+    declare -F __prompt_compose >/dev/null && __prompt_compose "${git[0]}"
 
     # Partie droite : code de retour et durée de la commande précédente
     local right=
