@@ -32,9 +32,36 @@ if [[ -f $dir/pip ]] && command -v pip3 >/dev/null; then
         'complete -o default -F _pip_completion pip3' >"$dir/pip3"
 fi
 
-# Outils dont la configuration a besoin
-for tool in git fzf less; do
-    command -v "$tool" >/dev/null || echo "dotfiles: $tool is not installed" >&2
+# Outils dont la configuration a besoin, signalés en une ligne avec la
+# commande d'installation de la distribution (nom de paquet : commande(s))
+declare -A tools=(
+    [git]=git
+    [fzf]=fzf             # **<Tab>, Ctrl-R
+    [less]=less
+    [ripgrep]=rg          # liste des fichiers de **<Tab> (respecte .gitignore)
+    [bat]='bat batcat'    # aperçu des fichiers ; « batcat » sur Debian
+)
+missing=()
+for pkg in "${!tools[@]}"; do
+    found=
+    for cmd in ${tools[$pkg]}; do
+        command -v "$cmd" >/dev/null && found=1
+    done
+    [[ -n $found ]] || missing+=("$pkg")
 done
+[[ -r /usr/share/bash-completion/bash_completion ]] || missing+=(bash-completion)
+if (( ${#missing[@]} )); then
+    mapfile -t missing < <(printf '%s\n' "${missing[@]}" | sort)
+    install=
+    if [[ -r /etc/os-release ]]; then
+        # ID et ID_LIKE (ubuntu → debian, rhel → fedora…)
+        os=$(. /etc/os-release && echo " ${ID:-} ${ID_LIKE:-} ")
+        case $os in
+            *" fedora "*) install="sudo dnf install ${missing[*]}" ;;
+            *" debian "*) install="sudo apt install ${missing[*]}" ;;
+        esac
+    fi
+    echo "dotfiles: missing tools: ${missing[*]}${install:+ (install: $install)}" >&2
+fi
 (( BASH_VERSINFO[0] > 4 )) ||
     echo "dotfiles: bash ${BASH_VERSION} is too old, version 5 or later is required" >&2

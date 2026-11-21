@@ -99,7 +99,7 @@ suivante.
   d'écriture. Pour ouvrir un fichier système, préférer `sudoedit fichier` à
   `sudo nvim fichier` : la configuration est la même et nvim ne tourne pas en
   root.
-- **Debian** : installer `git fzf less bash-completion` ; le hook bash signale
+- **Debian** : installer `git fzf less ripgrep bat bash-completion` ; le hook bash signale
   ce qui manque. nvim et tmux sont facultatifs : sans nvim, l'éditeur est vim,
   sinon vi.
 - **Nerd Font** : à installer sur le poste depuis lequel on se connecte, pas sur
