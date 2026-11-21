@@ -14,7 +14,8 @@
 #   <paquet>/home/…   fichiers à placer dans ~, même arborescence
 #   <paquet>/hook.sh  facultatif, lancé après chaque installation ou mise à jour
 #   <paquet>/check.sh facultatif, vérifications sans effet (outils manquants…),
-#                     lancé à chaque update, même déjà à jour, et par status ;
+#                     lancé à chaque update (avant les hooks), même déjà à
+#                     jour, et par status ;
 #                     ce qu'il affiche est montré en jaune
 #   <paquet>/requires facultatif, une commande par ligne : le paquet n'est
 #                     installé que si toutes ces commandes sont présentes
@@ -171,13 +172,15 @@ link() {
 }
 
 # Active la version $1 (nom d'un dossier de releases), affiche le message $2
-# une fois les fichiers en place, puis lance les hooks (rechargement de tmux…)
+# une fois les fichiers en place, puis les avertissements (check.sh), puis
+# lance les hooks (rechargement de tmux…)
 activate() {
     local release=$1 message=$2 name miss
     ln -sfn "releases/$release" "$DATA/current.new"
     mv -T "$DATA/current.new" "$DATA/current"
     link "$release"
     say "$message"
+    checks
     while read -r name; do
         miss=$(missing "$name")
         if [[ -n $miss ]]; then
@@ -258,11 +261,11 @@ cmd_update() {
     if [[ $(readlink "$DATA/current" 2>/dev/null) == *-"${commit:0:7}" ]]; then
         if [[ $(enabled) == "$(cat "$DATA/packages" 2>/dev/null)" ]]; then
             say "already up to date (${commit:0:7})"
+            checks
         else
             # Un outil requis a été installé ou désinstallé depuis
             activate "$(basename "$(readlink "$DATA/current")")" "packages updated (${commit:0:7})"
         fi
-        checks
         return
     fi
     tmp=$(mktemp -d "$DATA/tmp.XXXXXX")
@@ -276,7 +279,6 @@ cmd_update() {
     mv "$tmp" "$DATA/releases/$name"
     activate "$name" "installed $(git --git-dir="$REPO" log -1 --format='%h "%s"' "$commit") from $(branch)"
     prune
-    checks
 }
 
 cmd_install() {
@@ -318,7 +320,6 @@ cmd_rollback() {
     exec 9>"$DATA/lock"
     flock -n 9 || die "an update is already running"
     activate "$previous" "rolled back to $previous (the next update will reinstall the latest version)"
-    checks
 }
 
 cmd_status() {
