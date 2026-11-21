@@ -3,5 +3,6 @@
 
 # Recharger la configuration dans le serveur tmux en cours, s'il y en a un
 if tmux list-sessions >/dev/null 2>&1; then
-    tmux source-file "$HOME/.tmux.conf" && echo "tmux configuration reloaded"
+    echo 'dotfiles: reloading tmux'
+    tmux source-file "$HOME/.tmux.conf"
 fi
