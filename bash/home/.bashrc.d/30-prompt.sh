@@ -6,7 +6,8 @@
 # À gauche, où l'on est :
 # - conteneur toolbox/distrobox, utilisateur@machine seulement en root ou SSH
 #   (même après « sudo su - »)
-# - dossier : chemin complet, parents grisés, racine du dépôt git en gras ;
+# - dossier : chemin complet, parents grisés, racine du dépôt git et dossier
+#   du projet compose en gras ;
 #   des dossiers du milieu deviennent « … » seulement si la ligne déborde
 # À droite, le contexte, séparé par des « · » :
 # - git : branche, opération en cours, état
@@ -89,14 +90,14 @@ __prompt_dir_width() {
 }
 
 # Ajoute le dossier courant à __prompt_line : chemin complet, parents grisés,
-# racine du dépôt git en gras, dossier courant en cyan. S'il dépasse $2
-# colonnes, des dossiers du milieu sont remplacés par « … », en commençant
-# par la gauche ; le début (~ ou /), la racine du dépôt et le dossier courant
-# restent toujours visibles.
-# $1 : racine du dépôt git (vide hors dépôt)   $2 : largeur disponible
+# repères en gras (racine du dépôt git, dossier du projet compose), dossier
+# courant en cyan. S'il dépasse $1 colonnes, des dossiers du milieu sont
+# remplacés par « … », en commençant par la gauche ; le début (~ ou /), les
+# repères et le dossier courant restent toujours visibles.
+# $1 : largeur disponible   $2… : repères (vides s'il n'y en a pas)
 __prompt_dir() {
-    local top=$1 avail=$2 path=$PWD lock= root=-1 i n width
-    local -a parts hide=()
+    local avail=$1 path=$PWD lock= top i n width
+    local -a parts hide=() bold=()
 
     [[ -w $PWD ]] || lock="${__prompt_c[red]} ${__prompt_c[reset]}"
     if [[ $PWD == / ]]; then
@@ -109,16 +110,18 @@ __prompt_dir() {
     IFS=/ read -ra parts <<<"$path"
     n=${#parts[@]}
 
-    # Indice de la racine du dépôt (le dépôt qui serait ~ lui-même ne compte pas)
-    if [[ -n $top && $top != "$HOME" && ( $PWD == "$top" || $PWD == "$top"/* ) ]]; then
-        local rest=${PWD#"$top"} tail=()
-        IFS=/ read -ra tail <<<"${rest#/}"
-        root=$(( n - 1 - ${#tail[@]} ))
-    fi
+    # Position de chaque repère dans le chemin (~ lui-même ne compte pas)
+    for top in "${@:2}"; do
+        if [[ -n $top && $top != "$HOME" && ( $PWD == "$top" || $PWD == "$top"/* ) ]]; then
+            local rest=${PWD#"$top"} tail=()
+            IFS=/ read -ra tail <<<"${rest#/}"
+            bold[n - 1 - ${#tail[@]}]=1
+        fi
+    done
 
     __prompt_dir_width
     for (( i = 1; i < n - 1 && width > avail; i++ )); do
-        (( i == root )) && continue
+        [[ -n ${bold[i]} ]] && continue
         hide[i]=1
         __prompt_dir_width
     done
@@ -132,7 +135,7 @@ __prompt_dir() {
         (( i )) && out+="${dim}/${reset}"
         if (( i == n - 1 )); then
             out+="${__prompt_c[cyan]}${parts[i]}${reset}"
-        elif (( i == root )); then
+        elif [[ -n ${bold[i]} ]]; then
             out+="${__prompt_c[bold]}${parts[i]}${reset}"
         else
             out+="${dim}${parts[i]}${reset}"
@@ -258,7 +261,7 @@ __prompt_render() {
     local pad=$(( COLUMNS - 1 ))
     __prompt_width "$right"; (( pad -= __prompt_w ))
     __prompt_width "$__prompt_line"
-    __prompt_dir "${git[0]}" $(( pad - __prompt_w - 1 ))
+    __prompt_dir $(( pad - __prompt_w - 1 )) "${git[0]}" "${__prompt_compose_dir-}"
 
     # Aligner la partie droite sur le bord du terminal (simple espace si trop long)
     __prompt_width "$__prompt_line"; (( pad -= __prompt_w ))

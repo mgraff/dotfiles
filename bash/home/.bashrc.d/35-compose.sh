@@ -220,9 +220,13 @@ __compose_refresh() {
     fi
 }
 
-# Ajoute le segment à __prompt_right. $1 : racine du dépôt git (vide hors dépôt)
+# Ajoute le segment à __prompt_right et donne le dossier du projet dans
+# __prompt_compose_dir (mis en gras dans le chemin).
+# $1 : racine du dépôt git (vide hors dépôt)
 __prompt_compose() {
+    __prompt_compose_dir=
     __compose_find "$1" || return 0
+    __prompt_compose_dir=${__compose_files[0]%/*}
 
     # Relire l'état après une commande qui a pu changer les conteneurs
     local last
