@@ -111,7 +111,8 @@ suivante.
   dépôts GitHub clonés en https sont poussés en ssh.
 - **ssh** : les hôtes, utilisateurs et clés propres à la machine vont dans
   `~/.ssh/config.local`, hors du dépôt, lu avant `~/.ssh/config` (ssh garde la
-  première valeur trouvée). Les connexions à un même hôte sont partagées et
+  première valeur trouvée). Un `~/.ssh/config` déjà présent à l'installation du
+  paquet devient `~/.ssh/config.local` (une copie reste dans `backup/`). Les connexions à un même hôte sont partagées et
   restent ouvertes 10 minutes : `ssh -O exit hôte` pour fermer, `ssh -S none
   hôte` pour une connexion séparée. Un hôte inconnu est accepté sans question ;
   une clé d'hôte qui a changé est toujours refusée.
