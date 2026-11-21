@@ -115,5 +115,6 @@ suivante.
   paquet devient `~/.ssh/config.local` (une copie reste dans `backup/`). Les connexions à un même hôte sont partagées et
   restent ouvertes 10 minutes : `ssh -O exit hôte` pour fermer, `ssh -S none
   hôte` pour une connexion séparée. Un hôte inconnu est accepté sans question ;
-  une clé d'hôte qui a changé est toujours refusée.
+  une clé d'hôte qui a changé est toujours refusée. Un hôte injoignable
+  échoue au bout de 10 s.
 - **Dépôt public** : ne jamais y mettre de secret.
