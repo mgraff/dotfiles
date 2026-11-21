@@ -1,0 +1,33 @@
+# Complétion de la commande « dotfiles » (install.sh), chargée par
+# bash-completion au premier Tab
+
+# Branches du dépôt : celles du dépôt distant, pour proposer une branche tout
+# juste poussée, sinon celles de la copie locale (hors ligne, délai dépassé)
+_dotfiles_branches() {
+    local config=${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles
+    local repo=${XDG_DATA_HOME:-$HOME/.local/share}/dotfiles/repo.git
+    local source refs _ ref
+    source=$(cat "$config/source" 2>/dev/null) || return 0
+    refs=$(GIT_TERMINAL_PROMPT=0 timeout 3 git ls-remote --heads "$source" 2>/dev/null) ||
+        refs=$(git --git-dir="$repo" for-each-ref --format='%(objectname) %(refname)' refs/heads 2>/dev/null)
+    while read -r _ ref; do
+        printf '%s\n' "${ref#refs/heads/}"
+    done <<<"$refs"
+}
+
+_dotfiles() {
+    local cur=${COMP_WORDS[COMP_CWORD]}
+    COMPREPLY=()
+    if (( COMP_CWORD == 1 )); then
+        mapfile -t COMPREPLY < <(compgen -W 'install update switch rollback status' -- "$cur")
+    elif (( COMP_CWORD == 2 )); then
+        case ${COMP_WORDS[1]} in
+            switch)
+                mapfile -t COMPREPLY < <(compgen -W "$(_dotfiles_branches)" -- "$cur") ;;
+            install)
+                compopt -o filenames
+                mapfile -t COMPREPLY < <(compgen -d -- "$cur") ;;
+        esac
+    fi
+}
+complete -F _dotfiles dotfiles

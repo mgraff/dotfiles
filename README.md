@@ -19,6 +19,7 @@ Les fichiers déjà présents à la place des nouveaux sont déplacés dans
 ```
 install.sh              installe et met à jour (devient la commande « dotfiles »)
 bash/home/…             ~/.bashrc, ~/.inputrc, ~/.bashrc.d/…
+                        et la complétion de la commande dotfiles
 bash/hook.sh            complétions kubectl/npm/pip/toolbox, outils manquants
 nvim/home/…             ~/.config/nvim/init.lua (léger, sans plugin)
 nvim/requires           installé seulement si nvim est présent

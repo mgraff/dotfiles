@@ -78,7 +78,7 @@ check() {
     [[ -f $dir/install.sh ]] || die "install.sh is missing from the repository"
     while IFS= read -r -d '' f; do
         bash -n "$f" 2>/dev/null || { warn "syntax error: ${f#"$dir"/}"; errors=1; }
-    done < <(find "$dir" -type f \( -name '*.sh' -o -name '.bash*' -o -path '*/.bashrc.d/*' \) -print0)
+    done < <(find "$dir" -type f \( -name '*.sh' -o -name '.bash*' -o -path '*/.bashrc.d/*' -o -path '*/bash-completion/completions/*' \) -print0)
     (( ! errors )) || die "version rejected, nothing was changed"
 }
 
