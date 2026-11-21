@@ -34,7 +34,7 @@ __claude_command() {
             --effort low ${CLAUDE_SHELL_MODEL:+--model "$CLAUDE_SHELL_MODEL"} \
             --system-prompt 'Translate the request into one bash command for the system described. Reply with the command only: no explanation, no markdown, no code fence. If several commands are needed, join them with && or a pipe. Prefer commands available by default on that system.' \
             "System: $system, bash ${BASH_VERSION%%(*}, user $USER$( ((EUID)) || echo ' (root)'), current directory $PWD. Request: $request" \
-            </dev/null >"$tmp" 2>/dev/null
+            </dev/null >|"$tmp" 2>/dev/null
         echo $?
     )
 

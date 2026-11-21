@@ -55,7 +55,9 @@ ou à `.bashrc.d`. Il teste les commits, pas les modifications non commitées.
 
 Pour un comportement interactif (prompt, complétion, raccourcis, fzf), le
 tester dans un vrai pseudo-terminal (module `pty` de Python) en envoyant les
-touches. Pièges déjà rencontrés :
+touches, avec **toute** la configuration chargée (tous les fichiers de
+`.bashrc.d`), pas seulement le module modifié : `noclobber` est actif, un `>`
+vers un fichier existant échoue (utiliser `>|`). Pièges déjà rencontrés :
 
 - fzf demande la position du curseur (`\e[6n`) et attend la réponse : la
   simuler (`\e[5;1R`), sinon l'affichage est dégénéré.
