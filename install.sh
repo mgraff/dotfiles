@@ -203,26 +203,31 @@ checks() {
     done < <(enabled)
 }
 
-# Commande « dotfiles » et mise à jour quotidienne automatique
-setup() {
-    mkdir -p "$HOME/.local/bin"
-    ln -sfn "$DATA/current/install.sh" "$HOME/.local/bin/dotfiles"
-
-    command -v systemctl >/dev/null && systemctl --user show-environment >/dev/null 2>&1 || {
-        warn "systemd user instance unavailable: no automatic updates (run \"dotfiles update\")"
-        return 0
-    }
-    local units=${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user
-    mkdir -p "$units"
-    cat >"$units/dotfiles-update.service" <<'EOF'
+# Unités systemd de la mise à jour automatique : écrites seulement si elles
+# ont changé (puis daemon-reload), à l'installation et à chaque update pour
+# que les machines déjà installées reçoivent les nouvelles versions.
+# Code de retour 1 sans instance systemd utilisateur.
+units() {
+    command -v systemctl >/dev/null && systemctl --user show-environment >/dev/null 2>&1 ||
+        return 1
+    local dir=${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user changed= service timer
+    service=$(cat <<'EOF'
 [Unit]
 Description=Update dotfiles
+# Si une mise à jour échoue (réseau pas encore prêt à l'ouverture de session,
+# GitHub injoignable…), elle est relancée toutes les 5 minutes : le service ne
+# passe en échec que si ça dure (10 essais en une heure).
+StartLimitIntervalSec=1h
+StartLimitBurst=10
 
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/env bash %h/.local/share/dotfiles/current/install.sh update
+Restart=on-failure
+RestartSec=5min
 EOF
-    cat >"$units/dotfiles-update.timer" <<'EOF'
+)
+    timer=$(cat <<'EOF'
 [Unit]
 Description=Daily dotfiles update
 
@@ -235,7 +240,27 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 EOF
-    systemctl --user daemon-reload
+)
+    mkdir -p "$dir"
+    if [[ ! -f $dir/dotfiles-update.service || $(<"$dir/dotfiles-update.service") != "$service" ]]; then
+        printf '%s\n' "$service" >"$dir/dotfiles-update.service"
+        changed=1
+    fi
+    if [[ ! -f $dir/dotfiles-update.timer || $(<"$dir/dotfiles-update.timer") != "$timer" ]]; then
+        printf '%s\n' "$timer" >"$dir/dotfiles-update.timer"
+        changed=1
+    fi
+    [[ -z $changed ]] || systemctl --user daemon-reload
+}
+
+# Commande « dotfiles » et mise à jour quotidienne automatique
+setup() {
+    mkdir -p "$HOME/.local/bin"
+    ln -sfn "$DATA/current/install.sh" "$HOME/.local/bin/dotfiles"
+    units || {
+        warn "systemd user instance unavailable: no automatic updates (run \"dotfiles update\")"
+        return 0
+    }
     systemctl --user enable --now dotfiles-update.timer >/dev/null 2>&1 &&
         say "automatic updates: daily (systemctl --user status dotfiles-update.timer)"
 }
@@ -255,6 +280,7 @@ cmd_update() {
     mkdir -p "$DATA/releases"
     exec 9>"$DATA/lock"
     flock -n 9 || die "an update is already running"
+    units || true
 
     local commit tmp name
     commit=$(fetch)
