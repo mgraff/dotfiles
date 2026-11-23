@@ -40,6 +40,43 @@ shopt -s checkjobs  # exit prévient s'il reste des tâches ; un 2e exit force
 # Saisie de la phrase de passe GPG dans le terminal (réglé par Fedora, pas Debian)
 export GPG_TTY=${GPG_TTY:-$(tty)}
 
+# Agent ssh transmis (ssh -A) dans tmux : un pane garderait le SSH_AUTH_SOCK
+# de la connexion ssh qui l'a créé, et ce socket disparaît avec elle (git, ssh…
+# échouent alors avec « Permission denied (publickey) »). Les shells de tmux
+# utilisent donc un lien stable, ~/.ssh/agent.sock, que chaque shell ouvert
+# hors de tmux (celui d'une nouvelle connexion ssh) fait pointer vers son agent.
+__ssh_agent_link=$HOME/.ssh/agent.sock
+
+# Fait pointer le lien vers le socket $1 (sauf si c'est le lien lui-même)
+__ssh_agent_set() {
+    [[ $1 != "$__ssh_agent_link" && -S $1 && -d $HOME/.ssh ]] &&
+        ln -sfn "$1" "$__ssh_agent_link"
+}
+
+if [[ -z ${TMUX-} ]]; then
+    __ssh_agent_set "${SSH_AUTH_SOCK-}"
+else
+    [[ -S $__ssh_agent_link ]] || __ssh_agent_set "${SSH_AUTH_SOCK-}"
+    [[ -S $__ssh_agent_link ]] && export SSH_AUTH_SOCK=$__ssh_agent_link
+fi
+
+# Avant chaque prompt dans tmux : si l'agent a disparu (connexion fermée sans
+# qu'une autre ait repointé le lien), prendre le plus récent des agents
+# transmis encore présents (sshd les crée dans /tmp/ssh-*/agent.<pid>)
+__ssh_agent_refresh() {
+    local status=$? sock best=
+    if [[ -n ${TMUX-} && -n ${SSH_AUTH_SOCK-} && ! -S $SSH_AUTH_SOCK ]]; then
+        for sock in /tmp/ssh-*/agent.*; do
+            [[ -S $sock && ( -z $best || $sock -nt $best ) ]] && best=$sock
+        done
+        if [[ -n $best ]] && __ssh_agent_set "$best"; then
+            export SSH_AUTH_SOCK=$__ssh_agent_link
+        fi
+    fi
+    return $status
+}
+PROMPT_COMMAND+=(__ssh_agent_refresh)
+
 # bc : calcul avec 2 décimales (tronquées, pas arrondies : 2/3 donne .66 ;
 # « scale=5 » pour plus de précision) et fonctions mathématiques (-l : s(),
 # c(), l(), e(), sqrt()), sans la bannière de démarrage (-q).
