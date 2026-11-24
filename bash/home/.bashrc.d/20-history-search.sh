@@ -17,8 +17,6 @@ __hss_move() {
     if [[ ! -v __hss_last || $READLINE_LINE != "$__hss_last" ]]; then
         __hss_query=$READLINE_LINE
         __hss_index=-1
-        # Récupérer les commandes lancées entre-temps dans les autres terminaux
-        declare -F __history_sync >/dev/null && __history_sync
         mapfile -t __hss_matches < <(
             HISTTIMEFORMAT= builtin history |
                 sed -E 's/^ *[0-9]+\*? *//' |

@@ -91,13 +91,4 @@ fi
 
 # Ctrl-R : recherche dans l'historique avec fzf (liste filtrable, recherche
 # floue) au lieu de la recherche de bash. ↑/↓ gardent la recherche par
-# sous-chaîne de 20-history-search.sh. Avant d'ouvrir la liste, récupérer les
-# commandes lancées dans les autres terminaux (historique partagé,
-# 10-history.sh), comme le fait ↑.
-if declare -F __fzf_history__ >/dev/null && declare -F __history_sync >/dev/null; then
-    eval "__fzf_history_orig() $(declare -f __fzf_history__ | tail -n +2)"
-    __fzf_history__() {
-        __history_sync
-        __fzf_history_orig "$@"
-    }
-fi
+# sous-chaîne de 20-history-search.sh.
