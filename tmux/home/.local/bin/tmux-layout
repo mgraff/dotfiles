@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 # Sauvegarde et restauration de l'agencement d'une session tmux, à la main
 # (raccourcis dans ~/.tmux.conf) :
-#   tmux-layout save <session>      sauvegarde la session (id ou nom)
-#   tmux-layout menu <client> <session>
-#                                   menu des sauvegardes (lancé par tmux)
-#   tmux-layout restore <sauvegarde> <session>
+#   tmux-layout save <session> [client]
+#                                   sauvegarde la session (id ou nom)
+#   tmux-layout menu restore|delete <client> <session>
+#                                   menu des sauvegardes (lancé par tmux) ;
+#                                   s'il n'y en a qu'une, elle est restaurée
+#                                   directement
+#   tmux-layout restore <sauvegarde> <session> [client]
 #                                   ajoute les onglets sauvegardés à la session
+#   tmux-layout delete <sauvegarde> [client]
+#                                   supprime la sauvegarde
 #
 # Une sauvegarde par session, dans ~/.local/state/tmux/sessions/<nom>/ :
 #   layout       une ligne par pane (champs séparés par des tabulations)
@@ -20,7 +25,9 @@ relaunch=(vi vim nvim less man tail top htop watch ssh k9s)
 base=${XDG_STATE_HOME:-$HOME/.local/state}/tmux/sessions
 tab=$'\t'
 
-msg() { tmux display-message "dotfiles: $*"; }
+# Message dans la barre, affiché 5 s ($client : celui du raccourci, s'il est connu)
+client=
+msg() { tmux display-message ${client:+-c "$client"} -d 5000 "dotfiles: $*"; }
 
 # Programme au premier plan du pane dont le shell est $1 : sa ligne de
 # commande, citée pour bash, s'il est dans la liste ; rien sinon
@@ -65,20 +72,42 @@ save() {
 }
 
 menu() {
-    local client=$1 target=$2 items=() d name
-    # Noms de dossier limités à [A-Za-z0-9._-] : sans guillemet à échapper ;
-    # run-shell remplace #{q:session_id} par la session du menu, échappée
+    local mode=$1 target=$3 items=() saves=() d name label
+    client=$2
     for d in "$base"/*/; do
-        [[ -f $d/layout ]] || continue
-        read -r name < "$d/name"
-        d=${d%/}
-        items+=("${name//#/##}" "" "run-shell -b '$0 restore ${d##*/} #{q:session_id}'")
+        [[ -f $d/layout ]] && saves+=("${d%/}")
     done
-    if (( ! ${#items[@]} )); then
-        tmux display-message -c "$client" 'dotfiles: no saved session (prefix C-s to save one)'
+    if (( ! ${#saves[@]} )); then
+        msg 'no saved session (prefix C-s to save one)'
         return
     fi
-    tmux display-menu -c "$client" -t "$target" -T ' Restore session ' "${items[@]}"
+    if [[ $mode == restore && ${#saves[@]} == 1 ]]; then
+        restore "${saves[0]##*/}" "$target"
+        return
+    fi
+    # Noms de dossier limités à [A-Za-z0-9._-] : sans guillemet à échapper ;
+    # run-shell remplace #{q:…} par la valeur échappée pour le shell.
+    # Le nom affiché est un format : # doublé, guillemets retirés.
+    for d in "${saves[@]}"; do
+        read -r name < "$d/name"
+        label=${name//[\'\"]/_}
+        label=${label//#/##}
+        if [[ $mode == restore ]]; then
+            items+=("$label" "" "run-shell -b '$0 restore ${d##*/} #{q:session_id} #{q:client_name}'")
+        else
+            items+=("$label" "" "confirm-before -p 'Delete saved session $label? (y/n)' \"run-shell -b '$0 delete ${d##*/} #{q:client_name}'\"")
+        fi
+    done
+    tmux display-menu -c "$client" -t "$target" -T " ${mode^} saved session " "${items[@]}"
+}
+
+delete() {
+    local dir=$base/$1 name
+    client=$2
+    [[ -f $dir/layout ]] || { msg "no saved session $1"; return 1; }
+    read -r name < "$dir/name"
+    rm -rf -- "$dir"
+    msg "deleted saved session $name"
 }
 
 # Pane pour le texte sauvegardé : réaffiche le fichier puis lance le shell
@@ -91,6 +120,7 @@ pane_shell() {
 
 restore() {
     local dir=$base/$1 target=$2 session name
+    client=${3:-$client}
     local wi wname wauto wlayout wactive wzoom pi pactive ppath cmd
     local cur_w='' wid='' pane last_wlayout='' last_wzoom=0 active_pane='' active_window='' first=1 reuse=
     local windows=0 panes=0 shellcmd
@@ -151,8 +181,9 @@ restore() {
 }
 
 case $1 in
-    save) save "${2:?session}" ;;
-    menu) menu "${2:?client}" "${3:?session}" ;;
-    restore) restore "${2:?saved session}" "${3:?session}" ;;
-    *) echo "usage: tmux-layout save <session> | menu <client> <session> | restore <saved session> <session>" >&2; exit 2 ;;
+    save) client=${3:-}; save "${2:?session}" ;;
+    menu) menu "${2:?restore or delete}" "${3:?client}" "${4:?session}" ;;
+    delete) delete "${2:?saved session}" "${3:-}" ;;
+    restore) restore "${2:?saved session}" "${3:?session}" "${4:-}" ;;
+    *) echo "usage: tmux-layout save <session> | menu restore|delete <client> <session> | restore <saved session> <session> | delete <saved session>" >&2; exit 2 ;;
 esac
