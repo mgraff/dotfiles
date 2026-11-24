@@ -146,10 +146,10 @@ suivante.
   seule session, `k9s --write`.
 - **tmux** : `prefix C-s` sauvegarde la session courante (onglets, agencement
   des panes, dossiers, texte visible) dans `~/.local/state/tmux/sessions/`,
-  en remplaçant la sauvegarde précédente du même nom. `prefix C-r` la
-  restaure en nouveaux onglets dans la session courante (une session neuve,
-  un seul shell, est réutilisée) ; s'il y a plusieurs sauvegardes, un menu
-  demande laquelle. `prefix C-d` supprime une sauvegarde (menu, puis
+  en remplaçant la sauvegarde précédente du même nom. `prefix C-r` ouvre la
+  liste des sauvegardes : celle choisie est restaurée en nouveaux onglets
+  dans la session courante (une session neuve, un seul shell, est
+  réutilisée). `prefix C-d` supprime une sauvegarde (menu, puis
   confirmation). `less`, `nvim`, `ssh`… sont relancés (liste dans le script).
   Rien n'est automatique.
 - **Dépôt public** : ne jamais y mettre de secret.

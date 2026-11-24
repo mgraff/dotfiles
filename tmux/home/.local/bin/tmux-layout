@@ -4,9 +4,7 @@
 #   tmux-layout save <session> [client]
 #                                   sauvegarde la session (id ou nom)
 #   tmux-layout menu restore|delete <client> <session>
-#                                   menu des sauvegardes (lancé par tmux) ;
-#                                   s'il n'y en a qu'une, elle est restaurée
-#                                   directement
+#                                   menu des sauvegardes (lancé par tmux)
 #   tmux-layout restore <sauvegarde> <session> [client]
 #                                   ajoute les onglets sauvegardés à la session
 #   tmux-layout delete <sauvegarde> [client]
@@ -79,10 +77,6 @@ menu() {
     done
     if (( ! ${#saves[@]} )); then
         msg 'no saved session (prefix C-s to save one)'
-        return
-    fi
-    if [[ $mode == restore && ${#saves[@]} == 1 ]]; then
-        restore "${saves[0]##*/}" "$target"
         return
     fi
     # Noms de dossier limités à [A-Za-z0-9._-] : sans guillemet à échapper ;
