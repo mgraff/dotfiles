@@ -29,6 +29,7 @@ nvim/requires           installé seulement si nvim est présent
 tmux/home/…             ~/.tmux.conf
                         et ~/.local/bin/tmux-now-playing (Spotify dans la barre)
                         et ~/.local/bin/tmux-host-alerts (badge : services en échec, redémarrage)
+                        et ~/.local/bin/tmux-layout (sauvegarde et restauration d'une session)
 tmux/requires           installé seulement si tmux est présent
 tmux/hook.sh            recharge la configuration du serveur tmux en cours
 git/home/…              ~/.config/git/config (réglages communs)
@@ -143,4 +144,11 @@ suivante.
   contexte, mettre `readOnly: false` sous `k9s:` dans son fichier local
   `~/.local/share/k9s/clusters/<cluster>/<contexte>/config.yaml` ; pour une
   seule session, `k9s --write`.
+- **tmux** : `prefix C-s` sauvegarde la session courante (onglets, agencement
+  des panes, dossiers, texte visible) dans `~/.local/state/tmux/sessions/`,
+  en remplaçant la sauvegarde précédente du même nom. `prefix C-r` ouvre la
+  liste des sauvegardes : celle choisie est ajoutée en nouveaux onglets à la
+  session courante (une session neuve, un seul shell, est réutilisée).
+  `less`, `nvim`, `ssh`… sont relancés (liste dans le script). Rien n'est
+  automatique.
 - **Dépôt public** : ne jamais y mettre de secret.

@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+# Sauvegarde et restauration de l'agencement d'une session tmux, à la main
+# (raccourcis dans ~/.tmux.conf) :
+#   tmux-layout save <session>      sauvegarde la session (id ou nom)
+#   tmux-layout menu <client> <session>
+#                                   menu des sauvegardes (lancé par tmux)
+#   tmux-layout restore <sauvegarde> <session>
+#                                   ajoute les onglets sauvegardés à la session
+#
+# Une sauvegarde par session, dans ~/.local/state/tmux/sessions/<nom>/ :
+#   layout       une ligne par pane (champs séparés par des tabulations)
+#   <pane>.txt   texte visible du pane, réaffiché à la restauration
+# Restauré : onglets (nom, ordre, agencement, zoom), dossier de chaque pane,
+# onglet et pane actifs, texte visible ; les programmes de la liste ci-dessous
+# sont relancés avec les mêmes arguments.
+
+# Programmes relancés à la restauration (nom de la commande)
+relaunch=(vi vim nvim less man tail top htop watch ssh k9s)
+
+base=${XDG_STATE_HOME:-$HOME/.local/state}/tmux/sessions
+tab=$'\t'
+
+msg() { tmux display-message "dotfiles: $*"; }
+
+# Programme au premier plan du pane dont le shell est $1 : sa ligne de
+# commande, citée pour bash, s'il est dans la liste ; rien sinon
+foreground_command() {
+    local fg comm args=() name
+    fg=$(ps -o tpgid= -p "$1" 2>/dev/null) || return
+    fg=${fg// /}
+    [[ -n $fg && $fg != "$1" && $fg != -1 ]] || return
+    read -r comm < "/proc/$fg/comm" 2>/dev/null || return
+    for name in "${relaunch[@]}"; do
+        if [[ $comm == "$name" ]]; then
+            mapfile -d '' args < "/proc/$fg/cmdline" 2>/dev/null
+            (( ${#args[@]} )) && printf '%q ' "${args[@]}"
+            return
+        fi
+    done
+}
+
+save() {
+    local target=$1 name safe dir tmp count=0 windows
+    local wi wname wauto wlayout wactive wzoom pi pid pactive ppath palt paneid cmd
+    name=$(tmux display-message -p -t "$target" '#{session_name}') || return
+    safe=${name//[^A-Za-z0-9._-]/_}
+    dir=$base/$safe
+    mkdir -p "$base"
+    tmp=$(mktemp -d "$base/.tmp.XXXXXX") || return
+    printf '%s\n' "$name" > "$tmp/name"
+    while IFS=$tab read -r wi wname wauto wlayout wactive wzoom pi pid pactive ppath palt paneid; do
+        cmd=$(foreground_command "$pid")
+        # Texte visible, sauf programme plein écran ou relancé (il se redessine)
+        if [[ -z $cmd && $palt == 0 ]]; then
+            tmux capture-pane -p -e -t "$paneid" > "$tmp/$wi.$pi.txt"
+        fi
+        printf '%s\n' "$wi$tab$wname$tab$wauto$tab$wlayout$tab$wactive$tab$wzoom$tab$pi$tab$pactive$tab$ppath$tab$cmd"
+        (( count++ ))
+    done < <(tmux list-panes -s -t "$target" -F "#{window_index}$tab#{window_name}$tab#{automatic-rename}$tab#{window_layout}$tab#{window_active}$tab#{window_zoomed_flag}$tab#{pane_index}$tab#{pane_pid}$tab#{pane_active}$tab#{pane_current_path}$tab#{alternate_on}$tab#{pane_id}") \
+        > "$tmp/layout"
+    rm -rf -- "$dir"
+    mv -T -- "$tmp" "$dir"
+    windows=$(cut -f1 "$dir/layout" | sort -u | wc -l)
+    msg "saved session $name ($windows windows, $count panes)"
+}
+
+menu() {
+    local client=$1 target=$2 items=() d name
+    # Noms de dossier limités à [A-Za-z0-9._-] : sans guillemet à échapper ;
+    # run-shell remplace #{q:session_id} par la session du menu, échappée
+    for d in "$base"/*/; do
+        [[ -f $d/layout ]] || continue
+        read -r name < "$d/name"
+        d=${d%/}
+        items+=("${name//#/##}" "" "run-shell -b '$0 restore ${d##*/} #{q:session_id}'")
+    done
+    if (( ! ${#items[@]} )); then
+        tmux display-message -c "$client" 'dotfiles: no saved session (prefix C-s to save one)'
+        return
+    fi
+    tmux display-menu -c "$client" -t "$target" -T ' Restore session ' "${items[@]}"
+}
+
+# Pane pour le texte sauvegardé : réaffiche le fichier puis lance le shell
+pane_shell() {
+    local file=$1 shell
+    [[ -f $file ]] || return
+    shell=$(tmux show-options -gv default-shell)
+    printf 'cat -- %q; exec %q -l' "$file" "$shell"
+}
+
+restore() {
+    local dir=$base/$1 target=$2 session name
+    local wi wname wauto wlayout wactive wzoom pi pactive ppath cmd
+    local cur_w='' wid='' pane last_wlayout='' last_wzoom=0 active_pane='' active_window='' first=1 reuse=
+    local windows=0 panes=0 shellcmd
+    [[ -f $dir/layout ]] || { msg "no saved session $1"; return 1; }
+    read -r name < "$dir/name"
+    session=$(tmux display-message -p -t "$target" '#{session_id}') || return
+
+    # Session neuve (un onglet, un pane, juste un shell) : son pane est réutilisé
+    if [[ $(tmux display-message -p -t "$target" '#{session_windows} #{window_panes}') == '1 1' ]] &&
+        [[ $(tmux display-message -p -t "$target" '#{pane_current_command}') == "$(basename "$(tmux show-options -gv default-shell)")" ]]; then
+        reuse=$(tmux display-message -p -t "$target" '#{pane_id}')
+    fi
+
+    # Fin d'un onglet : agencement, pane actif, zoom
+    finish_window() {
+        [[ -n $wid ]] || return
+        tmux select-layout -t "$wid" "$last_wlayout" 2>/dev/null
+        [[ -n $active_pane ]] && tmux select-pane -t "$active_pane"
+        [[ $last_wzoom == 1 ]] && tmux resize-pane -Z -t "$active_pane"
+    }
+
+    while IFS=$tab read -r wi wname wauto wlayout wactive wzoom pi pactive ppath cmd; do
+        [[ -d $ppath ]] || ppath=$HOME
+        shellcmd=$(pane_shell "$dir/$wi.$pi.txt")
+        if [[ $wi != "$cur_w" ]]; then
+            finish_window
+            cur_w=$wi active_pane=''
+            if [[ -n $reuse ]]; then
+                pane=$reuse reuse=
+                tmux respawn-pane -k -t "$pane" -c "$ppath" ${shellcmd:+"$shellcmd"}
+                wid=$(tmux display-message -p -t "$pane" '#{window_id}')
+                [[ $wauto == 0 ]] && tmux rename-window -t "$wid" -- "$wname"
+            else
+                local opts=(-d -P -F '#{pane_id}' -t "$session:" -c "$ppath")
+                [[ $wauto == 0 ]] && opts+=(-n "$wname")
+                pane=$(tmux new-window "${opts[@]}" ${shellcmd:+"$shellcmd"}) || continue
+                wid=$(tmux display-message -p -t "$pane" '#{window_id}')
+            fi
+            (( windows++ ))
+        else
+            # Répartir l'espace avant chaque ajout, pour avoir la place ; le
+            # nouveau pane suit le précédent, dans l'ordre sauvegardé
+            tmux select-layout -t "$wid" tiled
+            pane=$(tmux split-window -d -P -F '#{pane_id}' -t "$pane" -c "$ppath" ${shellcmd:+"$shellcmd"}) || continue
+        fi
+        (( panes++ ))
+        last_wlayout=$wlayout last_wzoom=$wzoom
+        [[ $pactive == 1 ]] && active_pane=$pane
+        [[ $wactive == 1 && $pactive == 1 ]] && active_window=$wid
+        if [[ -n $cmd ]]; then
+            tmux send-keys -t "$pane" -l -- "$cmd"
+            tmux send-keys -t "$pane" Enter
+        fi
+    done < "$dir/layout"
+    finish_window
+    [[ -n $active_window ]] && tmux select-window -t "$active_window"
+    msg "restored session $name ($windows windows, $panes panes)"
+}
+
+case $1 in
+    save) save "${2:?session}" ;;
+    menu) menu "${2:?client}" "${3:?session}" ;;
+    restore) restore "${2:?saved session}" "${3:?session}" ;;
+    *) echo "usage: tmux-layout save <session> | menu <client> <session> | restore <saved session> <session>" >&2; exit 2 ;;
+esac
