@@ -3,6 +3,67 @@
 Les mêmes fichiers de configuration sur toutes les machines (Fedora, Debian),
 mis à jour automatiquement chaque jour depuis ce dépôt.
 
+## Fonctionnalités
+
+Une case vide dans la dernière colonne signifie que c'est automatique.
+
+| Paquet | Fonctionnalité | Raccourci / commande |
+|---|---|---|
+| **dotfiles** | Mise à jour quotidienne et 2 min après l'ouverture de session, rattrapée au réveil ou au démarrage, relancée toutes les 5 min en cas d'échec | `dotfiles update` |
+| | Suivre une branche pour la tester, revenir à une des 5 versions précédentes | `dotfiles switch X`, `dotfiles rollback` |
+| | Commit refusé s'il contient une erreur de syntaxe bash | |
+| | Paquet ignoré tant que son outil n'est pas installé, outils manquants signalés avec la commande d'installation | `dotfiles status` |
+| | Shell relancé après une mise à jour, rappel dans les autres terminaux | `exec bash` |
+| **bash** : prompt | Deux lignes : chemin complet (racine git et projet compose en gras, « … » seulement si trop long), cadenas si le dossier n'est pas modifiable | |
+| | Conteneur toolbox/distrobox, `utilisateur@machine` seulement en root ou en SSH (même après `sudo su -`) | |
+| | git : branche, opération en cours (`REBASING 1/3`, `MERGING`…), état (conflit, stash, modifié, indexé, non suivi, avance/retard) | |
+| | compose : projet, services en marche / déclarés, services arrêtés, healthcheck en échec, redémarrage en boucle, fichier modifié depuis le lancement (docker ou podman) | |
+| | Code de retour, durée si plus de 2 s, heure ; `❯` rouge après un échec | |
+| **bash** : historique | 10 000 commandes horodatées, sans doublons ; chaque commande est écrite dans le fichier dès son lancement (visible dans les terminaux ouverts ensuite), fichier dédoublonné à la fermeture du shell | |
+| | Recherche par sous-chaîne du texte déjà tapé, insensible à la casse | `↑` / `↓` |
+| | Recherche floue dans une liste fzf | `Ctrl-R` |
+| | Commandes les plus utilisées | `history-stat [n]` |
+| | `!!`, `!$`… développés avant exécution | `sudo !!` + `Espace` |
+| **bash** : complétion | Insensible à la casse, `-` et `_` équivalents, liste dès le premier Tab, en couleur | `Tab` |
+| | Liste filtrable de fichiers (respecte `.gitignore`), sélection multiple | `**<Tab>`, `cd **<Tab>` |
+| | Seulement les fichiers modifiés ou nouveaux, avec leur diff à droite | `git add/diff/restore **<Tab>` |
+| | Complétions de kubectl, npm, pip, toolbox et dotfiles | `Tab` |
+| **bash** : édition | Effacer jusqu'à l'espace ou au `/` précédent / suivant | `Ctrl-Backspace` / `Ctrl-Suppr` |
+| | Demande en langage naturel transformée en commande par Claude Code | `Alt-A` (`Ctrl-_` pour revenir) |
+| | `**` parcourt les sous-dossiers ; `>` n'écrase pas un fichier existant | `ls **/*.py`, `>\|` pour forcer |
+| | `exit` prévient s'il reste des tâches en arrière-plan | |
+| **bash** : environnement | Éditeur : nvim, sinon vim, sinon vi | |
+| | less sans pager pour un texte court, recherche insensible à la casse ; pages de manuel en couleur ; less ouvre archives et PDF | |
+| | Calculatrice avec 2 décimales et fonctions mathématiques | `bc` |
+| | Même comportement sur Fedora et Debian (couleurs de ls et grep, bash-completion, GPG) | |
+| **tmux** | Préfixe `Ctrl-A`, rechargement de la configuration | `Ctrl-A r` |
+| | Désactiver tous les raccourcis (tmux imbriqué via SSH), badge OFF | `F12` |
+| | Panes : découper dans le dossier courant, naviguer, zoomer, synchroniser | `Ctrl-A \|` / `-`, `Alt-flèches`, `Ctrl-A +`, `Ctrl-A S` |
+| | Fenêtres : créer et nommer, changer, déplacer | `Alt-Shift-T` ou `Ctrl-A c`, `Alt-Shift-flèches`, `Alt-Shift-PgUp/PgDn` |
+| | Sessions : sauvegarder l'agencement (onglets, panes, dossiers, texte visible), le restaurer, supprimer une sauvegarde ; `tmux new -s nom` restaure la sauvegarde du même nom | `Ctrl-A Ctrl-S`, `Ctrl-A Ctrl-R`, `Ctrl-A Ctrl-D` |
+| | Souris, 100 000 lignes d'historique, numérotation à partir de 1 | |
+| | Copie en mode vi vers le presse-papiers, y compris depuis un hôte distant (OSC 52) | `Ctrl-A [`, `Entrée` |
+| | Onglets : badges synchronisation, SSH, root, mode copie, zoom | |
+| | Barre : morceau Spotify en cours, nom d'hôte, services systemd en échec, redémarrage nécessaire, heure | |
+| | Configuration rechargée dans le serveur en cours à chaque mise à jour | |
+| **nvim** | Numéros de ligne, recherche smartcase, annulations conservées, espaces visibles, texte copié surligné | |
+| | Presse-papiers du système (OSC 52 en SSH) | `y`, `p` |
+| | Enregistrer avec sudo | `:W` |
+| | Messages de commit : repères à 50 et 72 colonnes, retour à la ligne à 72 | |
+| **git** | `pull` en rebase avec autostash, premier `push` qui crée la branche distante, `fetch` qui nettoie | |
+| | Diffs plus lisibles (blocs déplacés), conflits avec la version d'origine (zdiff3), résolutions retenues (rerere) | |
+| | `log` sur une ligne par commit, qui suit les renommages ; `status` court ; branches récentes en premier ; tags triés par version | `git log --format=medium` pour le détail |
+| | Diff sous le message de commit, commande mal tapée corrigée après confirmation | |
+| | Dépôts GitHub clonés en https, poussés en ssh | |
+| | Identité propre à chaque machine, signalée si absente ; fichiers ignorés partout (éditeurs, `.venv`…) | `git config --global` |
+| **ssh** | Réglages propres à la machine dans un fichier local prioritaire | `~/.ssh/config.local` |
+| | Connexions partagées par hôte, ouvertes 10 min | `ssh -O exit hôte`, `ssh -S none hôte` |
+| | Connexion morte détectée en 2 min, hôte injoignable abandonné en 10 s | |
+| | Hôte inconnu accepté sans question, clé changée refusée ; clé ajoutée à l'agent ; noms d'hôtes complétables | |
+| **dig** | Seulement la réponse | `dig +all` pour tout |
+| **k9s** | Lecture seule sur tous les contextes | `k9s --write` |
+| | Couleurs de tmux, sans logo, logs plus longs avec l'heure | |
+
 ## Installation
 
 Il faut `git` et `curl` :
