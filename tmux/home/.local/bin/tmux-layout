@@ -25,9 +25,9 @@ relaunch=(vi vim nvim less man tail top htop watch ssh k9s)
 base=${XDG_STATE_HOME:-$HOME/.local/state}/tmux/sessions
 tab=$'\t'
 
-# Message dans la barre, affiché 5 s ($client : celui du raccourci, s'il est connu)
+# Message dans la barre, affiché 3 s ($client : celui du raccourci, s'il est connu)
 client=
-msg() { tmux display-message ${client:+-c "$client"} -d 5000 "dotfiles: $*"; }
+msg() { tmux display-message ${client:+-c "$client"} -d 3000 "dotfiles: $*"; }
 
 # Programme au premier plan du pane dont le shell est $1 : sa ligne de
 # commande, citée pour bash, s'il est dans la liste ; rien sinon
