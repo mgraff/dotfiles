@@ -149,7 +149,8 @@ suivante.
   en remplaçant la sauvegarde précédente du même nom. `prefix C-r` ouvre la
   liste des sauvegardes : celle choisie est restaurée en nouveaux onglets
   dans la session courante (une session neuve, un seul shell, est
-  réutilisée). `prefix C-d` supprime une sauvegarde (menu, puis
-  confirmation). `less`, `nvim`, `ssh`… sont relancés (liste dans le script).
-  Rien n'est automatique.
+  réutilisée). Une session créée avec le nom d'une sauvegarde
+  (`tmux new -s work`) la restaure aussitôt. `prefix C-d` supprime une
+  sauvegarde (menu, puis confirmation). `less`, `nvim`, `ssh`… sont relancés
+  (liste dans le script). La sauvegarde n'est jamais automatique.
 - **Dépôt public** : ne jamais y mettre de secret.

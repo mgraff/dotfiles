@@ -9,6 +9,10 @@
 #                                   ajoute les onglets sauvegardés à la session
 #   tmux-layout delete <sauvegarde> [client]
 #                                   supprime la sauvegarde
+#   tmux-layout autorestore <session>
+#                                   à la création d'une session (hook) :
+#                                   restaure la sauvegarde du même nom, s'il
+#                                   y en a une
 #
 # Une sauvegarde par session, dans ~/.local/state/tmux/sessions/<nom>/ :
 #   layout       une ligne par pane (champs séparés par des tabulations)
@@ -104,6 +108,15 @@ delete() {
     msg "deleted saved session $name"
 }
 
+autorestore() {
+    local target=$1 name safe
+    name=$(tmux display-message -p -t "$target" '#{session_name}') || return
+    safe=${name//[^A-Za-z0-9._-]/_}
+    [[ -f $base/$safe/layout ]] || return 0
+    [[ $(tmux display-message -p -t "$target" '#{session_windows} #{window_panes}') == '1 1' ]] || return 0
+    fresh=1 restore "$safe" "$target"
+}
+
 # Pane pour le texte sauvegardé : réaffiche le fichier puis lance le shell
 pane_shell() {
     local file=$1 shell
@@ -122,9 +135,12 @@ restore() {
     read -r name < "$dir/name"
     session=$(tmux display-message -p -t "$target" '#{session_id}') || return
 
-    # Session neuve (un onglet, un pane, juste un shell) : son pane est réutilisé
+    # Session neuve (un onglet, un pane, juste un shell) : son pane est
+    # réutilisé. $fresh : session tout juste créée, son shell peut ne pas
+    # encore être lancé.
     if [[ $(tmux display-message -p -t "$target" '#{session_windows} #{window_panes}') == '1 1' ]] &&
-        [[ $(tmux display-message -p -t "$target" '#{pane_current_command}') == "$(basename "$(tmux show-options -gv default-shell)")" ]]; then
+        { [[ -n ${fresh:-} ]] ||
+            [[ $(tmux display-message -p -t "$target" '#{pane_current_command}') == "$(basename "$(tmux show-options -gv default-shell)")" ]]; }; then
         reuse=$(tmux display-message -p -t "$target" '#{pane_id}')
     fi
 
@@ -178,6 +194,7 @@ case $1 in
     save) client=${3:-}; save "${2:?session}" ;;
     menu) menu "${2:?restore or delete}" "${3:?client}" "${4:?session}" ;;
     delete) delete "${2:?saved session}" "${3:-}" ;;
+    autorestore) autorestore "${2:?session}" ;;
     restore) restore "${2:?saved session}" "${3:?session}" "${4:-}" ;;
-    *) echo "usage: tmux-layout save <session> | menu restore|delete <client> <session> | restore <saved session> <session> | delete <saved session>" >&2; exit 2 ;;
+    *) echo "usage: tmux-layout save <session> | menu restore|delete <client> <session> | restore <saved session> <session> | delete <saved session> | autorestore <session>" >&2; exit 2 ;;
 esac
