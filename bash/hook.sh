@@ -9,6 +9,7 @@ dir=${BASH_COMPLETION_USER_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/bash-comple
 declare -A generators=(
     [kubectl]='kubectl completion bash'
     [npm]='npm completion'
+    [op]='op completion bash'
     [pip]='pip completion --bash'
     [toolbox]='toolbox completion bash'
 )

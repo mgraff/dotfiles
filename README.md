@@ -27,7 +27,7 @@ Une case vide dans la dernière colonne signifie que c'est automatique.
 | **bash** : complétion | Insensible à la casse, `-` et `_` équivalents, liste dès le premier Tab, en couleur | `Tab` |
 | | Liste filtrable de fichiers (respecte `.gitignore`), sélection multiple | `**<Tab>`, `cd **<Tab>` |
 | | Seulement les fichiers modifiés ou nouveaux, avec leur diff à droite | `git add/diff/restore **<Tab>` |
-| | Complétions de kubectl, npm, pip, toolbox et dotfiles | `Tab` |
+| | Complétions de kubectl, npm, op, pip, toolbox et dotfiles | `Tab` |
 | **bash** : édition | Effacer jusqu'à l'espace ou au `/` précédent / suivant | `Ctrl-Backspace` / `Ctrl-Suppr` |
 | | Demande en langage naturel transformée en commande par Claude Code | `Alt-A` (`Ctrl-_` pour revenir) |
 | | `**` parcourt les sous-dossiers ; `>` n'écrase pas un fichier existant | `ls **/*.py`, `>\|` pour forcer |
@@ -60,6 +60,8 @@ Une case vide dans la dernière colonne signifie que c'est automatique.
 | | Connexions partagées par hôte, ouvertes 10 min | `ssh -O exit hôte`, `ssh -S none hôte` |
 | | Connexion morte détectée en 2 min, hôte injoignable abandonné en 10 s | |
 | | Hôte inconnu accepté sans question, clé changée refusée ; clé ajoutée à l'agent ; noms d'hôtes complétables | |
+| **1password** | Clés SSH gardées dans 1Password, chaque utilisation approuvée dans l'application (si son agent SSH est activé) | |
+| | Shell plugins du CLI : `gh`, `glab`… authentifiés via 1Password | `op plugin init gh` |
 | **dig** | Seulement la réponse | `dig +all` pour tout |
 | **k9s** | Lecture seule sur tous les contextes | `k9s --write` |
 | | Couleurs de tmux, sans logo, logs plus longs avec l'heure | |
@@ -83,7 +85,7 @@ tests/e2e.sh            teste une branche dans un HOME jetable (--debian : Debia
 CLAUDE.md               consignes pour Claude Code
 bash/home/…             ~/.bashrc, ~/.inputrc, ~/.bashrc.d/…
                         et la complétion de la commande dotfiles
-bash/hook.sh            complétions kubectl/npm/pip/toolbox
+bash/hook.sh            complétions kubectl/npm/op/pip/toolbox
 bash/check.sh           signale les outils manquants
 nvim/home/…             ~/.config/nvim/init.lua (léger, sans plugin)
 nvim/requires           installé seulement si nvim est présent
@@ -101,6 +103,9 @@ git/check.sh            signale une identité manquante
 ssh/home/…              ~/.ssh/config (réglages communs)
 ssh/requires            installé seulement si ssh est présent
 ssh/hook.sh             crée ~/.ssh/config.local et ~/.ssh/sockets, droits de ~/.ssh
+1password/home/…        ~/.ssh/config.d/1password.conf (agent SSH de 1Password)
+                        et ~/.bashrc.d/45-1password.sh (shell plugins de op)
+1password/requires      installé seulement si l'application 1Password est présente
 dig/home/…              ~/.digrc (seulement la réponse ; dig +all pour tout)
 dig/requires            installé seulement si dig est présent
 k9s/home/…              ~/.config/k9s/config.yaml (lecture seule par défaut)
@@ -201,6 +206,16 @@ suivante.
   hôte` pour une connexion séparée. Un hôte inconnu est accepté sans question ;
   une clé d'hôte qui a changé est toujours refusée. Un hôte injoignable
   échoue au bout de 10 s.
+- **1password** : activer l'agent dans l'application (Paramètres >
+  Développeur > Agent SSH) et y importer ou créer les clés. ssh l'utilise dès
+  que son socket existe (`~/.1password/agent.sock`), sinon il garde l'agent du
+  système ; `ssh-add -l` interroge toujours ce dernier, utiliser
+  `SSH_AUTH_SOCK=~/.1password/agent.sock ssh-add -l`. Une connexion partagée
+  ne demande l'approbation qu'une fois. Au-delà de 6 clés, un serveur peut
+  refuser (« Too many authentication failures ») : dans `~/.ssh/config.local`,
+  `IdentityFile ~/.ssh/<clé>.pub` et `IdentitiesOnly yes` pour cet hôte. Le
+  CLI (`op`, paquet `1password-cli`) est facultatif ; sa complétion est
+  générée par le hook bash même sans l'application.
 - **k9s** : en lecture seule sur tous les contextes. Pour pouvoir agir sur un
   contexte, mettre `readOnly: false` sous `k9s:` dans son fichier local
   `~/.local/share/k9s/clusters/<cluster>/<contexte>/config.yaml` ; pour une
