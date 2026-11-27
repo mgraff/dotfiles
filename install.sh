@@ -70,9 +70,9 @@ fetch() {
     local source branch
     source=$(<"$CONFIG/source")
     if [[ ! -d $REPO ]]; then
-        git clone --quiet --bare "$source" "$REPO" || die "cannot clone $source"
+        git clone --quiet --bare "$source" "$REPO" 9>&- || die "cannot clone $source"
     else
-        git --git-dir="$REPO" fetch --quiet --prune "$source" '+refs/heads/*:refs/heads/*' ||
+        git --git-dir="$REPO" fetch --quiet --prune "$source" '+refs/heads/*:refs/heads/*' 9>&- ||
             die "cannot fetch $source"
     fi
     if [[ -f $CONFIG/branch ]]; then
@@ -186,7 +186,7 @@ activate() {
         if [[ -n $miss ]]; then
             say "skipped $name: ${miss% } not installed"
         elif [[ -f $DATA/current/$name/hook.sh ]]; then
-            (cd "$DATA/current/$name" && bash ./hook.sh </dev/null) || warn "hook failed: $name"
+            (cd "$DATA/current/$name" && bash ./hook.sh </dev/null 9>&-) || warn "hook failed: $name"
         fi
     done < <(packages)
     enabled >"$DATA/packages"
@@ -199,7 +199,7 @@ checks() {
         [[ -f $DATA/current/$name/check.sh ]] || continue
         while IFS= read -r line; do
             attention "$line"
-        done < <(cd "$DATA/current/$name" && bash ./check.sh </dev/null 2>&1)
+        done < <(cd "$DATA/current/$name" && bash ./check.sh </dev/null 2>&1 9>&-)
     done < <(enabled)
 }
 
@@ -278,6 +278,10 @@ cmd_update() {
     [[ -f $CONFIG/source ]] || die "no repository configured: dotfiles install <repository>"
     command -v git >/dev/null || die "git is not installed"
     mkdir -p "$DATA/releases"
+    # Verrou tenu par le descripteur 9 jusqu'à la fin. git, les hooks et les
+    # check.sh sont lancés avec ce descripteur fermé (« 9>&- ») : sinon un
+    # démon qu'ils démarrent (« op daemon », lancé par « op completion »)
+    # en hériterait, garderait le verrou et bloquerait les mises à jour.
     exec 9>"$DATA/lock"
     flock -n 9 || die "an update is already running"
     units || true
