@@ -93,6 +93,7 @@ tmux/home/…             ~/.tmux.conf
                         et ~/.local/bin/tmux-now-playing (Spotify dans la barre)
                         et ~/.local/bin/tmux-host-alerts (badge : services en échec, redémarrage)
                         et ~/.local/bin/tmux-layout (sauvegarde et restauration d'une session)
+                        et ~/.local/bin/tmux-window-root (badge root d'un onglet)
 tmux/requires           installé seulement si tmux est présent
 tmux/hook.sh            recharge la configuration du serveur tmux en cours
 git/home/…              ~/.config/git/config (réglages communs)
