@@ -7,7 +7,7 @@ if [ -f /etc/bashrc ]; then
 fi
 
 # Commandes personnelles
-if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:" ]]; then
+if [[ ":$PATH:" != *":$HOME/.local/bin:$HOME/bin:"* ]]; then
     PATH="$HOME/.local/bin:$HOME/bin:$PATH"
 fi
 export PATH

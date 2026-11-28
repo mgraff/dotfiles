@@ -129,7 +129,7 @@ restore() {
     local dir=$base/$1 target=$2 session name
     client=${3:-$client}
     local wi wname wauto wlayout wactive wzoom pi pactive ppath cmd
-    local cur_w='' wid='' pane last_wlayout='' last_wzoom=0 active_pane='' active_window='' first=1 reuse=
+    local cur_w='' wid='' pane last_wlayout='' last_wzoom=0 active_pane='' active_window='' reuse=
     local windows=0 panes=0 shellcmd
     [[ -f $dir/layout ]] || { msg "no saved session $1"; return 1; }
     read -r name < "$dir/name"

@@ -1,0 +1,48 @@
+# Tests de chaque push, sur toutes les branches : une branche est vérifiée
+# avant d'être fusionnée dans master, que les machines installent seules.
+#   shellcheck  tous les scripts bash (réglages : .shellcheckrc)
+#   e2e         tests/e2e.sh : installation de master puis de la branche dans
+#               un HOME jetable, sur Ubuntu et dans un conteneur Debian 13
+name: tests
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Un nouveau push sur la même branche annule les tests en cours
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: shellcheck
+        run: |
+          shellcheck --version | sed -n 2p
+          git ls-files -z |
+            grep -zE '\.sh$|/\.bash(rc|_profile|_logout)$|/\.bashrc\.d/|/completions/|/\.local/bin/' |
+            xargs -0 shellcheck -S warning
+
+  e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        system: [ubuntu, debian]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # e2e.sh installe aussi master : tout l'historique
+      - name: local master branch
+        run: git show-ref --verify --quiet refs/heads/master || git branch master origin/master
+      - name: tools
+        if: matrix.system == 'ubuntu'
+        run: sudo apt-get -qq update && sudo apt-get -qq install -y tmux fzf ripgrep bat bash-completion
+      - name: e2e
+        run: tests/e2e.sh ${{ matrix.system == 'debian' && '--debian' || '' }} "$GITHUB_REF_NAME"

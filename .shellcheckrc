@@ -1,0 +1,7 @@
+# Configuration de shellcheck (CI : .github/workflows/tests.yml), lancé avec
+# « -S warning ». Les fichiers de .bashrc.d n'ont pas de shebang : tout est bash.
+shell=bash
+# SC1007 : « a= b= » vide plusieurs variables d'un coup, c'est voulu
+# SC1090, SC1091 : fichiers chargés à l'exécution (/etc/bashrc, ~/.bashrc.d/*,
+# plugins de op…), que shellcheck ne peut pas suivre
+disable=SC1007,SC1090,SC1091

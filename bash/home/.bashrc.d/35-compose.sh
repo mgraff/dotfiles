@@ -15,6 +15,8 @@
 # L'état des conteneurs (docker, ou podman s'il n'en voit aucun) est gardé 10 s,
 # et relu après chaque commande qui mentionne compose, podman ou docker.
 
+# shellcheck disable=SC2154  # __prompt_c : couleurs définies par 30-prompt.sh
+
 [[ $- == *i* ]] || return 0
 
 __compose_ttl=10
@@ -23,15 +25,15 @@ declare -A __compose_svc=()
 # Cherche un fichier compose de $PWD jusqu'à $1 (racine git), $HOME ou /.
 # Résultat dans __compose_files : le fichier principal, puis l'override éventuel.
 __compose_find() {
-    local stop=$1 dir=$PWD f
+    local stop=$1 dir=$PWD f o
     __compose_files=()
     while :; do
         for f in compose.yaml compose.yml docker-compose.yaml docker-compose.yml; do
             [[ -f $dir/$f ]] || continue
             __compose_files=("$dir/$f")
-            for f in compose.override.yaml compose.override.yml \
+            for o in compose.override.yaml compose.override.yml \
                      docker-compose.override.yaml docker-compose.override.yml; do
-                [[ -f $dir/$f ]] && __compose_files+=("$dir/$f")
+                [[ -f $dir/$o ]] && __compose_files+=("$dir/$o")
             done
             return 0
         done

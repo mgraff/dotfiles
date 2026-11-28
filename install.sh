@@ -380,6 +380,7 @@ cmd_update() {
         return
     fi
     tmp=$(mktemp -d "$DATA/tmp.XXXXXX")
+    # shellcheck disable=SC2064  # chemin développé maintenant, voulu
     trap "rm -rf $(printf '%q' "$tmp")" EXIT
     git --git-dir="$REPO" archive "$commit" | tar -x -C "$tmp"
     check "$tmp"

@@ -173,6 +173,8 @@ suivante.
 1. Pousser les modifications sur une branche, par exemple `essai`.
 2. Sur la machine de test : `dotfiles switch essai`.
 3. Corriger, pousser, puis `dotfiles update` (le timer suit aussi la branche).
+   Chaque push est testé par la CI GitHub (shellcheck, installation sur Ubuntu
+   et Debian 13) : onglet Actions du dépôt.
 4. Une fois la branche fusionnée dans master : `dotfiles switch master`. Si la
    branche a été supprimée du dépôt, la mise à jour suivante revient d'elle-même
    sur master.
