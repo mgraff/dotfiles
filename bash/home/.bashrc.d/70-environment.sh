@@ -37,8 +37,14 @@ fi
 
 shopt -s checkjobs  # exit prévient s'il reste des tâches ; un 2e exit force
 
-# Saisie de la phrase de passe GPG dans le terminal (réglé par Fedora, pas Debian)
-export GPG_TTY=${GPG_TTY:-$(tty)}
+# Saisie de la phrase de passe GPG dans le terminal (réglé par Fedora, pas Debian).
+# Toujours le terminal de ce shell, jamais une valeur héritée : un pane tmux
+# recevrait sinon celui du shell qui a lancé le serveur tmux, et la demande de
+# phrase de passe s'afficherait là-bas. Rien sans terminal (« not a tty »).
+if __gpg_tty=$(tty 2>/dev/null); then
+    export GPG_TTY=$__gpg_tty
+fi
+unset __gpg_tty
 
 # Agent ssh transmis (ssh -A) dans tmux : un pane garderait le SSH_AUTH_SOCK
 # de la connexion ssh qui l'a créé, et ce socket disparaît avec elle (git, ssh…
