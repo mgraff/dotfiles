@@ -404,13 +404,13 @@ cmd_status() {
         [[ -n $skipped ]] && say "skipped:    $skipped"
     fi
     say "managed files: $(wc -l <"$DATA/links" 2>/dev/null || echo 0)"
+    if [[ -f $DATA/last-update ]]; then
+        say "last update: $(stamp "$(<"$DATA/last-update")")"
+    fi
     if command -v systemctl >/dev/null && systemctl --user is-enabled dotfiles-update.timer >/dev/null 2>&1; then
         local next
         next=$(systemctl --user show dotfiles-update.timer -p NextElapseUSecRealtime --value --timestamp=unix)
         [[ $next == @* ]] && say "next update: $(stamp "${next#@}")"
-    fi
-    if [[ -f $DATA/last-update ]]; then
-        say "last update: $(stamp "$(<"$DATA/last-update")")"
     fi
     update_failure
     [[ -n $current ]] && checks
