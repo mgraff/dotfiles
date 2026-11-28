@@ -271,18 +271,26 @@ updated() {
     date +%s >"$DATA/last-update"
 }
 
-# Durée écoulée depuis la date $1 (secondes depuis 1970), en clair
-ago() {
-    local s=$(( $(date +%s) - $1 ))
+# Date $1 (secondes depuis 1970) suivie de l'écart avec maintenant, passé ou
+# à venir : « 2026-11-28 11:59 (5 min ago) », « 2026-11-29 00:47 (in 12 h) »
+stamp() {
+    local s=$(( $(date +%s) - $1 )) delta
+    (( s >= 0 )) || s=$(( -s ))
     if (( s < 3600 )); then
-        echo "$(( s / 60 )) min ago"
+        delta="$(( s / 60 )) min"
     elif (( s < 86400 )); then
-        echo "$(( s / 3600 )) h ago"
+        delta="$(( s / 3600 )) h"
     elif (( s < 2 * 86400 )); then
-        echo "1 day ago"
+        delta="1 day"
     else
-        echo "$(( s / 86400 )) days ago"
+        delta="$(( s / 86400 )) days"
     fi
+    if (( $1 > $(date +%s) )); then
+        delta="in $delta"
+    else
+        delta="$delta ago"
+    fi
+    printf '%s (%s)\n' "$(date -d "@$1" '+%F %R')" "$delta"
 }
 
 # Supprime les plus anciennes versions au-delà de $KEEP
@@ -397,12 +405,12 @@ cmd_status() {
     fi
     say "managed files: $(wc -l <"$DATA/links" 2>/dev/null || echo 0)"
     if command -v systemctl >/dev/null && systemctl --user is-enabled dotfiles-update.timer >/dev/null 2>&1; then
-        say "next update: $(systemctl --user show dotfiles-update.timer -p NextElapseUSecRealtime --value)"
+        local next
+        next=$(systemctl --user show dotfiles-update.timer -p NextElapseUSecRealtime --value --timestamp=unix)
+        [[ $next == @* ]] && say "next update: $(stamp "${next#@}")"
     fi
     if [[ -f $DATA/last-update ]]; then
-        local last
-        last=$(<"$DATA/last-update")
-        say "last update: $(date -d "@$last" '+%F %R') ($(ago "$last"))"
+        say "last update: $(stamp "$(<"$DATA/last-update")")"
     fi
     update_failure
     [[ -n $current ]] && checks
