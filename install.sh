@@ -265,6 +265,26 @@ setup() {
         say "automatic updates: daily (systemctl --user status dotfiles-update.timer)"
 }
 
+# Date de la dernière mise à jour réussie (installée ou déjà à jour), pour
+# « dotfiles status »
+updated() {
+    date +%s >"$DATA/last-update"
+}
+
+# Durée écoulée depuis la date $1 (secondes depuis 1970), en clair
+ago() {
+    local s=$(( $(date +%s) - $1 ))
+    if (( s < 3600 )); then
+        echo "$(( s / 60 )) min ago"
+    elif (( s < 86400 )); then
+        echo "$(( s / 3600 )) h ago"
+    elif (( s < 2 * 86400 )); then
+        echo "1 day ago"
+    else
+        echo "$(( s / 86400 )) days ago"
+    fi
+}
+
 # Supprime les plus anciennes versions au-delà de $KEEP
 prune() {
     local current old
@@ -296,6 +316,7 @@ cmd_update() {
             # Un outil requis a été installé ou désinstallé depuis
             activate "$(basename "$(readlink "$DATA/current")")" "packages updated (${commit:0:7})"
         fi
+        updated
         return
     fi
     tmp=$(mktemp -d "$DATA/tmp.XXXXXX")
@@ -309,6 +330,7 @@ cmd_update() {
     mv "$tmp" "$DATA/releases/$name"
     activate "$name" "installed $(git --git-dir="$REPO" log -1 --format='%h "%s"' "$commit") from $(branch)"
     prune
+    updated
 }
 
 cmd_install() {
@@ -377,7 +399,25 @@ cmd_status() {
     if command -v systemctl >/dev/null && systemctl --user is-enabled dotfiles-update.timer >/dev/null 2>&1; then
         say "next update: $(systemctl --user show dotfiles-update.timer -p NextElapseUSecRealtime --value)"
     fi
+    if [[ -f $DATA/last-update ]]; then
+        local last
+        last=$(<"$DATA/last-update")
+        say "last update: $(date -d "@$last" '+%F %R') ($(ago "$last"))"
+    fi
+    update_failure
     [[ -n $current ]] && checks
+}
+
+# Mise à jour automatique en échec (le « ⚠ » de la barre d'état de tmux) :
+# l'affiche en jaune avec le dernier message d'erreur de l'installateur
+update_failure() {
+    command -v systemctl >/dev/null &&
+        systemctl --user is-failed --quiet dotfiles-update.service 2>/dev/null || return 0
+    local error
+    error=$(journalctl --user -u dotfiles-update.service -o cat -n 200 --no-pager 2>/dev/null |
+        grep '^dotfiles: ' | tail -n 1)
+    attention "automatic update failed${error:+: ${error#dotfiles: }}"
+    attention "  details: journalctl --user -u dotfiles-update"
 }
 
 usage() {

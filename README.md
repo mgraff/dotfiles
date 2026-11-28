@@ -13,6 +13,7 @@ Une case vide dans la dernière colonne signifie que c'est automatique.
 | | Suivre une branche pour la tester, revenir à une des 5 versions précédentes | `dotfiles switch X`, `dotfiles rollback` |
 | | Commit refusé s'il contient une erreur de syntaxe bash | |
 | | Paquet ignoré tant que son outil n'est pas installé, outils manquants signalés avec la commande d'installation | `dotfiles status` |
+| | Mise à jour automatique en échec (`⚠` dans la barre d'état de tmux) : cause et date de la dernière mise à jour réussie | `dotfiles status` |
 | | Shell relancé après une mise à jour, rappel dans les autres terminaux | `exec bash` |
 | **bash** : prompt | Deux lignes : chemin complet (racine git et projet compose en gras, « … » seulement si trop long), cadenas si le dossier n'est pas modifiable | |
 | | Conteneur toolbox/distrobox, `utilisateur@machine` seulement en root ou en SSH (même après `sudo su -`) | |
@@ -147,7 +148,8 @@ k9s/requires            installé seulement si k9s est présent
 ```
 dotfiles update      récupérer et appliquer le dernier commit
 dotfiles switch X    suivre la branche X (pour la tester) et l'installer
-dotfiles status      dépôt, version installée, prochaine mise à jour
+dotfiles status      dépôt, version installée, dernière et prochaine mise à jour,
+                     cause de l'échec de la mise à jour automatique
 dotfiles rollback    revenir à la version précédente
 ```
 
