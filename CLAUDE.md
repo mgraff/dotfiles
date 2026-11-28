@@ -56,14 +56,15 @@ qui concerne la façon d'y travailler.
 ## Tests
 
 La CI GitHub (`.github/workflows/tests.yml`) lance sur chaque push
-`shellcheck -S warning` (réglages dans `.shellcheckrc`) et `tests/e2e.sh`, sur
-Ubuntu et avec `--debian`. Une branche n'est proposée à la fusion que si elle
+`shellcheck -S warning` (réglages dans `.shellcheckrc`) et `tests/e2e.sh --fedora` et
+`--debian`. Une branche n'est proposée à la fusion que si elle
 passe ; en local : `podman run --rm -v "$PWD:/mnt:ro,Z" -w /mnt
 docker.io/koalaman/shellcheck:stable -S warning <fichiers>`.
 
 `tests/e2e.sh [branche]` installe `master` puis la branche dans un HOME
 jetable, avec un serveur tmux de test, et vérifie qu'un bash interactif
-s'ouvre sans erreur ; `--debian` refait le test dans un conteneur Debian 13.
+s'ouvre sans erreur ; `--debian` et `--fedora` refont le test dans un
+conteneur Debian 13 ou Fedora 45.
 Le lancer avant de proposer une branche qui touche à l'installateur, aux hooks
 ou à `.bashrc.d`. Il teste les commits, pas les modifications non commitées.
 

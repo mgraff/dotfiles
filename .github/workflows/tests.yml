@@ -2,7 +2,7 @@
 # avant d'être fusionnée dans master, que les machines installent seules.
 #   shellcheck  tous les scripts bash (réglages : .shellcheckrc)
 #   e2e         tests/e2e.sh : installation de master puis de la branche dans
-#               un HOME jetable, sur Ubuntu et dans un conteneur Debian 13
+#               un HOME jetable, dans un conteneur Fedora 45 et Debian 13
 name: tests
 
 on:
@@ -34,15 +34,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        system: [ubuntu, debian]
+        system: [fedora, debian]
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0  # e2e.sh installe aussi master : tout l'historique
       - name: local master branch
         run: git show-ref --verify --quiet refs/heads/master || git branch master origin/master
-      - name: tools
-        if: matrix.system == 'ubuntu'
-        run: sudo apt-get -qq update && sudo apt-get -qq install -y tmux fzf ripgrep bat bash-completion
       - name: e2e
-        run: tests/e2e.sh ${{ matrix.system == 'debian' && '--debian' || '' }} "$GITHUB_REF_NAME"
+        run: tests/e2e.sh --${{ matrix.system }} "$GITHUB_REF_NAME"

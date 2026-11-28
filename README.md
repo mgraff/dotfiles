@@ -82,7 +82,7 @@ Les fichiers déjà présents à la place des nouveaux sont déplacés dans
 
 ```
 install.sh              installe et met à jour (devient la commande « dotfiles »)
-tests/e2e.sh            teste une branche dans un HOME jetable (--debian : Debian 13)
+tests/e2e.sh            teste une branche dans un HOME jetable (--debian, --fedora : conteneur)
 CLAUDE.md               consignes pour Claude Code
 bash/home/…             ~/.bashrc, ~/.inputrc, ~/.bashrc.d/…
                         et la complétion de la commande dotfiles
@@ -173,7 +173,7 @@ suivante.
 1. Pousser les modifications sur une branche, par exemple `essai`.
 2. Sur la machine de test : `dotfiles switch essai`.
 3. Corriger, pousser, puis `dotfiles update` (le timer suit aussi la branche).
-   Chaque push est testé par la CI GitHub (shellcheck, installation sur Ubuntu
+   Chaque push est testé par la CI GitHub (shellcheck, installation sur Fedora
    et Debian 13) : onglet Actions du dépôt.
 4. Une fois la branche fusionnée dans master : `dotfiles switch master`. Si la
    branche a été supprimée du dépôt, la mise à jour suivante revient d'elle-même

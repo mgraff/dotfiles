@@ -2,11 +2,12 @@
 # Test de bout en bout d'une branche, dans un HOME jetable : rien n'est modifié
 # dans le vrai ~, ni dans le serveur tmux en cours, ni dans systemd.
 #
-#   tests/e2e.sh [--debian] [--keep] [branche] [base]
+#   tests/e2e.sh [--debian|--fedora] [--keep] [branche] [base]
 #
 #   branche   branche à tester (par défaut : la branche courante du dépôt)
 #   base      branche installée d'abord (par défaut : master)
 #   --debian  lance le même test dans un conteneur Debian 13 (podman)
+#   --fedora  lance le même test dans un conteneur Fedora 45 (podman)
 #   --keep    garde le HOME jetable pour l'inspecter
 #
 # Le dépôt local sert de source : les commits non poussés sont testés aussi,
@@ -24,11 +25,11 @@
 set -euo pipefail
 
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-debian= keep=
+system= keep=
 args=()
 for arg; do
     case $arg in
-        --debian) debian=1 ;;
+        --debian|--fedora) system=${arg#--} ;;
         --keep)   keep=1 ;;
         -h|--help) sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; exit 0 ;;
         -*) echo "e2e: unknown option $arg" >&2; exit 2 ;;
@@ -44,14 +45,22 @@ done
 [[ -z $(git -C "$repo" status --porcelain) ]] ||
     echo "e2e: warning: uncommitted changes are not tested" >&2
 
-# Même test dans Debian 13 : le dépôt est monté en lecture seule
-if [[ -n $debian ]]; then
-    exec podman run --rm -v "$repo:/repo:ro,Z" docker.io/library/debian:13 bash -c '
-        apt-get -qq update >/dev/null &&
-        apt-get -qq install -y git tmux fzf ripgrep bat bash-completion less procps >/dev/null 2>&1 ||
-            { echo "e2e: apt-get failed" >&2; exit 1; }
-        git config --global safe.directory "*"
-        exec bash /repo/tests/e2e.sh "$@"' e2e "$branch" "$base"
+# Même test dans un conteneur Debian 13 ou Fedora 45, avec les outils que
+# check.sh demande : le dépôt est monté en lecture seule
+if [[ -n $system ]]; then
+    case $system in
+        debian)
+            image=docker.io/library/debian:13
+            install='apt-get -qq update >/dev/null &&
+                apt-get -qq install -y git tmux fzf ripgrep bat bash-completion less procps' ;;
+        fedora)
+            image=registry.fedoraproject.org/fedora:45
+            install='dnf -q install -y git tmux fzf ripgrep bat bash-completion less procps-ng util-linux-core findutils' ;;
+    esac
+    exec podman run --rm -v "$repo:/repo:ro,Z" "$image" bash -c "
+        { $install; } >/dev/null 2>&1 || { echo 'e2e: package installation failed' >&2; exit 1; }
+        git config --global safe.directory '*'
+        exec bash /repo/tests/e2e.sh \"\$@\"" e2e "$branch" "$base"
 fi
 
 # Dossier court : les sockets tmux sont limités à 108 caractères
