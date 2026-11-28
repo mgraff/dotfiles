@@ -21,6 +21,13 @@ qui concerne la façon d'y travailler.
 - Commentaires et documentation en français ; messages affichés à
   l'utilisateur et messages de commit en anglais.
 - Messages des scripts au format `dotfiles: …` (`dotfiles: reloading tmux`).
+  Dans un terminal, l'installateur remplace ce préfixe par une icône et une
+  couleur : `ok` (action réussie), `note` (détail grisé, dont la sortie des
+  hooks), `warn` et `check.sh` (jaune), `error`/`die` (rouge) ; commit en
+  jaune (`hash_`), branche en violet (`branch_`). Les utiliser pour tout
+  nouveau message. Hors terminal (journal du timer) ou avec `NO_COLOR` : texte
+  brut, et les erreurs gardent le préfixe (`update_failure` le cherche dans le
+  journal).
 - Toujours une espace après une icône Nerd Font (la police non Mono les fait
   déborder sur le caractère suivant).
 - Pas d'alias utilitaires : l'utilisateur n'en veut pas. Une fonction n'est

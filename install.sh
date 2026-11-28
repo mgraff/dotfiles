@@ -37,18 +37,58 @@ CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles
 REPO=$DATA/repo.git
 KEEP=5  # versions conservées pour rollback
 
+# Affichage. Dans un terminal (sortie et erreurs, sauf NO_COLOR ou TERM=dumb) :
+# couleurs et icônes Nerd Font, chacune suivie d'une espace. Ailleurs (journal
+# du timer, sortie redirigée) : texte brut, avertissements et erreurs préfixés
+# par « dotfiles: » (update_failure retrouve ainsi l'erreur dans le journal).
+if [[ -t 1 && -t 2 && -z ${NO_COLOR:-} && ${TERM:-dumb} != dumb ]]; then
+    fancy=1
+    reset=$'\e[0m' bold=$'\e[1m' dim=$'\e[2m'
+    red=$'\e[1;31m' green=$'\e[1;32m' yellow=$'\e[1;33m'
+    blue=$'\e[1;34m' purple=$'\e[1;35m' cyan=$'\e[36m'
+else
+    fancy= reset= bold= dim= red= green= yellow= blue= purple= cyan=
+fi
+
 say()  { printf '%s\n' "$*"; }
-# Avertissement en jaune gras dans un terminal (pas de codes couleur dans le
-# journal du timer), sauf si NO_COLOR est défini
-attention() {
-    if [[ -t 2 && -z ${NO_COLOR:-} ]]; then
-        printf '\e[1;33m%s\e[0m\n' "$*" >&2
+# Action réussie (version installée…) : «  installed … »
+ok()   { say "${green}${fancy:+ }${reset}$*"; }
+# Détail d'une action (fichier sauvegardé, sortie d'un hook…) : grisé, en
+# retrait sous l'action ; le préfixe « dotfiles: » des hooks devient inutile
+note() {
+    if [[ -n $fancy ]]; then
+        say "${dim}  › ${*#dotfiles: }${reset}"
     else
-        printf '%s\n' "$*" >&2
+        say "$*"
     fi
 }
-warn() { printf 'dotfiles: %s\n' "$*" >&2; }
-die()  { warn "$*"; exit 1; }
+# Avertissement en jaune (check.sh, warn) : une ligne « dotfiles: … » reçoit
+# l'icône à la place du préfixe, les suivantes (commande à lancer…) restent
+# alignées sous son texte
+attention() {
+    if [[ -z $fancy ]]; then
+        printf '%s\n' "$*" >&2
+    elif [[ $* == 'dotfiles: '* ]]; then
+        printf '%s\n' "${yellow} ${*#dotfiles: }${reset}" >&2
+    else
+        printf '%s\n' "${yellow}  $*${reset}" >&2
+    fi
+}
+warn() { attention "dotfiles: $*"; }
+# Erreur en rouge (die, mise à jour automatique en échec)
+error() {
+    if [[ -n $fancy ]]; then
+        printf '%s\n' "${red} $*${reset}" >&2
+    else
+        printf 'dotfiles: %s\n' "$*" >&2
+    fi
+}
+die()  { error "$*"; exit 1; }
+
+# Éléments mis en valeur partout : commit (jaune) et branche (violet, comme
+# dans le prompt)
+hash_()   { printf '%s' "${yellow}${1:0:7}${reset}"; }
+branch_() { printf '%s' "${purple}$1${reset}"; }
 
 # Branche par défaut du dépôt (celle de HEAD au moment du clone)
 default_branch() {
@@ -78,7 +118,7 @@ fetch() {
     if [[ -f $CONFIG/branch ]]; then
         branch=$(<"$CONFIG/branch")
         if ! git --git-dir="$REPO" show-ref --verify --quiet "refs/heads/$branch"; then
-            warn "branch $branch no longer exists, back to $(default_branch)"
+            warn "branch $branch no longer exists, back to $(branch_ "$(default_branch)")"
             rm -f "$CONFIG/branch"
         fi
     fi
@@ -90,7 +130,7 @@ check() {
     local dir=$1 f errors=0
     [[ -f $dir/install.sh ]] || die "install.sh is missing from the repository"
     while IFS= read -r -d '' f; do
-        bash -n "$f" 2>/dev/null || { warn "syntax error: ${f#"$dir"/}"; errors=1; }
+        bash -n "$f" 2>/dev/null || { error "syntax error: ${f#"$dir"/}"; errors=1; }
     done < <(find "$dir" -type f \( -name '*.sh' -o -name '.bash*' -o -path '*/.bashrc.d/*' -o -path '*/bash-completion/completions/*' -o -path '*/.local/bin/*' \) -print0)
     (( ! errors )) || die "version rejected, nothing was changed"
 }
@@ -152,7 +192,7 @@ link() {
                 else
                     mkdir -p "$DATA/backup/$stamp/$(dirname "${dst#"$HOME"/}")"
                     mv "$dst" "$DATA/backup/$stamp/${dst#"$HOME"/}"
-                    say "backed up: ~/${dst#"$HOME"/} -> $DATA/backup/$stamp/"
+                    note "backed up: ~/${dst#"$HOME"/} -> $DATA/backup/$stamp/"
                 fi
             fi
             ln -s "$src" "$dst"
@@ -165,7 +205,7 @@ link() {
             grep -qxF -- "$old" "$new_list" && continue
             [[ -L $old && $(readlink "$old") == "$DATA"/* ]] || continue
             rm -f "$old"
-            say "removed: ~/${old#"$HOME"/}"
+            note "removed: ~/${old#"$HOME"/}"
         done <"$DATA/links"
     fi
     mv "$new_list" "$DATA/links"
@@ -173,23 +213,33 @@ link() {
 
 # Active la version $1 (nom d'un dossier de releases), affiche le message $2
 # une fois les fichiers en place, puis les avertissements (check.sh), puis
-# lance les hooks (rechargement de tmux…)
+# lance les hooks (rechargement de tmux…), dont la sortie est affichée en
+# détail sous le message
 activate() {
     local release=$1 message=$2 name miss
     ln -sfn "releases/$release" "$DATA/current.new"
     mv -T "$DATA/current.new" "$DATA/current"
     link "$release"
-    say "$message"
+    ok "$message"
     checks
     while read -r name; do
         miss=$(missing "$name")
         if [[ -n $miss ]]; then
-            say "skipped $name: ${miss% } not installed"
+            note "skipped $name: ${miss% } not installed"
         elif [[ -f $DATA/current/$name/hook.sh ]]; then
-            (cd "$DATA/current/$name" && bash ./hook.sh </dev/null 9>&-) || warn "hook failed: $name"
+            (cd "$DATA/current/$name" && bash ./hook.sh </dev/null 2>&1 9>&-) | details ||
+                warn "hook failed: $name"
         fi
     done < <(packages)
     enabled >"$DATA/packages"
+}
+
+# Chaque ligne lue sur l'entrée, en détail (note)
+details() {
+    local line
+    while IFS= read -r line; do
+        note "$line"
+    done
 }
 
 # Vérifications des paquets actifs (<paquet>/check.sh), affichées en jaune
@@ -261,8 +311,10 @@ setup() {
         warn "systemd user instance unavailable: no automatic updates (run \"dotfiles update\")"
         return 0
     }
-    systemctl --user enable --now dotfiles-update.timer >/dev/null 2>&1 &&
-        say "automatic updates: daily (systemctl --user status dotfiles-update.timer)"
+    if systemctl --user enable --now dotfiles-update.timer >/dev/null 2>&1; then
+        ok "automatic updates: daily"
+        note "systemctl --user status dotfiles-update.timer"
+    fi
 }
 
 # Date de la dernière mise à jour réussie (installée ou déjà à jour), pour
@@ -290,7 +342,7 @@ stamp() {
     else
         delta="$delta ago"
     fi
-    printf '%s (%s)\n' "$(date -d "@$1" '+%F %R')" "$delta"
+    printf '%s %s\n' "$(date -d "@$1" '+%F %R')" "${dim}($delta)${reset}"
 }
 
 # Supprime les plus anciennes versions au-delà de $KEEP
@@ -318,11 +370,11 @@ cmd_update() {
     commit=$(fetch)
     if [[ $(readlink "$DATA/current" 2>/dev/null) == *-"${commit:0:7}" ]]; then
         if [[ $(enabled) == "$(cat "$DATA/packages" 2>/dev/null)" ]]; then
-            say "already up to date (${commit:0:7})"
+            ok "already up to date $(hash_ "$commit")"
             checks
         else
             # Un outil requis a été installé ou désinstallé depuis
-            activate "$(basename "$(readlink "$DATA/current")")" "packages updated (${commit:0:7})"
+            activate "$(basename "$(readlink "$DATA/current")")" "packages updated $(hash_ "$commit")"
         fi
         updated
         return
@@ -336,7 +388,7 @@ cmd_update() {
     while compgen -G "$DATA/releases/$(date +%Y%m%d-%H%M%S)-*" >/dev/null; do sleep 1; done
     name=$(date +%Y%m%d-%H%M%S)-${commit:0:7}
     mv "$tmp" "$DATA/releases/$name"
-    activate "$name" "installed $(git --git-dir="$REPO" log -1 --format='%h "%s"' "$commit") from $(branch)"
+    activate "$name" "installed $(hash_ "$commit") \"$(git --git-dir="$REPO" log -1 --format=%s "$commit")\" from $(branch_ "$(branch)")"
     prune
     updated
 }
@@ -379,67 +431,104 @@ cmd_rollback() {
     [[ -n $previous ]] || die "no previous version"
     exec 9>"$DATA/lock"
     flock -n 9 || die "an update is already running"
-    activate "$previous" "rolled back to $previous (the next update will reinstall the latest version)"
+    activate "$previous" "rolled back to $(hash_ "${previous##*-}")"
+    note "the next update will reinstall the latest version"
+}
+
+# Ligne de « dotfiles status » : icône $1, libellé $2, valeur $3
+field() {
+    if [[ -n $fancy ]]; then
+        printf '%s\n' "${blue}$1 ${reset}${dim}$(printf '%-11s' "$2")${reset} $3"
+    else
+        printf '%-12s %s\n' "$2:" "$3"
+    fi
 }
 
 cmd_status() {
-    local current
+    local current branch value release name skipped= last next
     current=$(readlink "$DATA/current" 2>/dev/null) || current=
-    say "repository: $(cat "$CONFIG/source" 2>/dev/null || echo 'none')"
-    say "branch:     $(branch)"
-    if [[ -n $current ]]; then
-        say "version:    ${current#releases/} $(git --git-dir="$REPO" log -1 --format='"%s", %cr' "${current##*-}" 2>/dev/null)"
+    field  repository "$(cat "$CONFIG/source" 2>/dev/null || echo none)"
+
+    # Branche de test en jaune, avec la commande pour revenir
+    branch=$(branch)
+    if [[ $branch == "$(default_branch)" ]]; then
+        field  branch "$(branch_ "$branch")"
     else
-        say "version:    none"
+        field  branch "${yellow}$branch${reset} ${dim}(test branch: \"dotfiles switch $(default_branch)\" to come back)${reset}"
     fi
-    say "available:  $(ls -1 "$DATA/releases" 2>/dev/null | sort -r | tr '\n' ' ')"
+
     if [[ -n $current ]]; then
-        local name skipped=
+        field  version "$(hash_ "${current##*-}") $(git --git-dir="$REPO" log -1 --format='"%s"' "${current##*-}" 2>/dev/null) ${dim}($(git --git-dir="$REPO" log -1 --format=%cr "${current##*-}" 2>/dev/null))${reset}"
+    else
+        field  version none
+    fi
+
+    # Versions pour rollback, la plus récente d'abord ; l'active en gras
+    value=
+    while IFS= read -r release; do
+        if [[ releases/$release == "$current" ]]; then
+            value+="${bold}${release##*-}${reset} "
+        else
+            value+="${dim}${release##*-}${reset} "
+        fi
+    done < <(ls -1 "$DATA/releases" 2>/dev/null | sort -r)
+    field  available "${value% }"
+
+    if [[ -n $current ]]; then
+        value=
+        for name in $(enabled); do
+            value+="${green}$name${reset} "
+        done
+        field  packages "${value% }"
         for name in $(packages); do
             if [[ -n $(missing "$name") ]]; then
-                skipped+="$name ($(missing "$name" | sed 's/ $//') not installed) "
+                skipped+="${yellow}$name${reset} ($(missing "$name" | sed 's/ $//') not installed) "
             fi
         done
-        say "packages:   $(enabled | tr '\n' ' ')"
-        [[ -n $skipped ]] && say "skipped:    $skipped"
+        [[ -n $skipped ]] && field  skipped "${skipped% }"
     fi
-    say "managed files: $(wc -l <"$DATA/links" 2>/dev/null || echo 0)"
+    field  files "$(wc -l <"$DATA/links" 2>/dev/null || echo 0) links in ~"
     if [[ -f $DATA/last-update ]]; then
-        say "last update: $(stamp "$(<"$DATA/last-update")")"
+        last=$(<"$DATA/last-update")
+        # Plus de 2 jours sans mise à jour réussie : en jaune
+        if (( $(date +%s) - last > 2 * 86400 )); then
+            field  "last update" "${yellow}$(stamp "$last")${reset}"
+        else
+            field  "last update" "$(stamp "$last")"
+        fi
     fi
     if command -v systemctl >/dev/null && systemctl --user is-enabled dotfiles-update.timer >/dev/null 2>&1; then
-        local next
         next=$(systemctl --user show dotfiles-update.timer -p NextElapseUSecRealtime --value --timestamp=unix)
-        [[ $next == @* ]] && say "next update: $(stamp "${next#@}")"
+        [[ $next == @* ]] && field  "next update" "$(stamp "${next#@}")"
     fi
     update_failure
     [[ -n $current ]] && checks
+    return 0
 }
 
 # Mise à jour automatique en échec (le « ⚠ » de la barre d'état de tmux) :
-# l'affiche en jaune avec le dernier message d'erreur de l'installateur
+# l'affiche en rouge avec le dernier message d'erreur de l'installateur
 update_failure() {
     command -v systemctl >/dev/null &&
         systemctl --user is-failed --quiet dotfiles-update.service 2>/dev/null || return 0
     local error
     error=$(journalctl --user -u dotfiles-update.service -o cat -n 200 --no-pager 2>/dev/null |
         grep '^dotfiles: ' | tail -n 1)
-    attention "automatic update failed${error:+: ${error#dotfiles: }}"
-    attention "  details: journalctl --user -u dotfiles-update"
+    error "automatic update failed${error:+: ${error#dotfiles: }}"
+    note "details: journalctl --user -u dotfiles-update"
 }
 
 usage() {
-    cat <<'EOF'
-dotfiles: install and keep the same dotfiles up to date on every machine
-
-  dotfiles install <repository>  first install; <repository> is a git URL
-                                 (https://github.com/.../dotfiles.git) or a local path
-  dotfiles update                fetch the latest commit and apply it
-  dotfiles switch <branch>       follow another branch (to test it) and install it;
-                                 "dotfiles switch master" to come back
-  dotfiles rollback              go back to the previous version
-  dotfiles status                repository, installed version, managed files
-EOF
+    local c=$cyan r=$reset d=$dim
+    say "${bold}dotfiles${reset}: install and keep the same dotfiles up to date on every machine"
+    say ""
+    say "  ${c}dotfiles install${r} <repository>  first install; <repository> is a git URL"
+    say "                                 ${d}(https://github.com/.../dotfiles.git) or a local path${r}"
+    say "  ${c}dotfiles update${r}                fetch the latest commit and apply it"
+    say "  ${c}dotfiles switch${r} <branch>       follow another branch (to test it) and install it;"
+    say "                                 ${d}\"dotfiles switch master\" to come back${r}"
+    say "  ${c}dotfiles rollback${r}              go back to the previous version"
+    say "  ${c}dotfiles status${r}                repository, installed version, updates, packages"
 }
 
 case ${1:-} in

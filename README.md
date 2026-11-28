@@ -153,6 +153,9 @@ dotfiles status      dépôt, version installée, dernière et prochaine mise à
 dotfiles rollback    revenir à la version précédente
 ```
 
+Dans un terminal, la sortie est en couleurs avec des icônes Nerd Font ;
+`NO_COLOR=1 dotfiles status` pour du texte brut (comme dans le journal du timer).
+
 `dotfiles update`, `switch` et `rollback` relancent le shell (`exec bash`)
 quand la version installée change, sauf si des tâches tournent en arrière-plan.
 Les autres shells ouverts, et ceux mis à jour par le timer, affichent un rappel
